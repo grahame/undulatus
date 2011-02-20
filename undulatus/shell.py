@@ -548,6 +548,12 @@ if __name__ == '__main__':
                 return
             display_tweets(tracker.get_cached_tweets()[-last:])
 
+    class Recent(object):
+        __metaclass__ = CompletionMeta
+        commands = ['recent']
+        def __call__(self, command, what):
+            Last()(command, '10')
+
     class Grep(object):
         __metaclass__ = CompletionMeta
         commands = ['grep']
