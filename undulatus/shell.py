@@ -546,6 +546,9 @@ if __name__ == '__main__':
             except ValueError:
                 print "usage: last <n>"
                 return
+            except TypeError:
+                print "usage: last <n>"
+                return
             display_tweets(tracker.get_cached_tweets()[-last:])
 
     class Recent(object):
