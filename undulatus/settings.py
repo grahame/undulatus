@@ -79,4 +79,5 @@ TEMPLATE_DIRS = (
 )
 
 INSTALLED_APPS = (
+	'undulatus.tweets'
 )

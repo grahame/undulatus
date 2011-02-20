@@ -5,6 +5,12 @@ from twitter.oauth import OAuth, write_token_file, read_token_file
 from twitter.api import Twitter, TwitterError
 from pprint import pprint
 
+from django.core.management import setup_environ
+import settings
+setup_environ(settings)
+from tweets.models import Tweet
+
+
 commands = {}
 class CompletionMeta(type):
     def __init__(cls, name, bases, dct):
@@ -172,6 +178,9 @@ if __name__ == '__main__':
             self.twitter_to_key.pop(tweet['id'])
 
         def add(self, tweet):
+            # look up our database object
+            obj = Tweet.get_or_make(tweet)
+            print obj
             key = self.make_key(self.last_id)
             # remove something to limit memory use
             remove_key = self.make_key((self.last_id - self.nstored) % (self.base * self.base))
