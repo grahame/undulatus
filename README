@@ -1,0 +1,9 @@
+Undulatus, a command line twitter client based upon the 
+python twitter tools package.
+
+You'll need to have ptt installed:
+http://mike.verdone.ca/twitter/
+
+You'll also need Django installed. All tweets are stored in an 
+SQL database for archival purposes.
+
