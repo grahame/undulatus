@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import readline, itertools, sys, os, signal, threading, traceback, re
+import readline, itertools, sys, os, signal, threading, traceback, re, json
 from twitter.oauth import OAuth, write_token_file, read_token_file
 from twitter.api import Twitter, TwitterError
 from pprint import pprint
@@ -84,9 +84,42 @@ if __name__ == '__main__':
         api_version='1',
         domain='api.twitter.com')
 
+    def sort_tweets_by_id(tweets):
+        tweets.sort(key=lambda a: a['id'])
+
+    def eof_help():
+        print "\nuse /quit to quit"
+
+    def get_line(prompt):
+        try:
+            return raw_input(prompt)
+        except EOFError:
+            eof_help()
+            return ''
+        except KeyboardInterrupt:
+            eof_help()
+            return ''
+
     def confirm():
-        confirm = raw_input("confirm? ")
-        return confirm.startswith('y')
+        confirm = get_line("confirm? ")
+        return (confirm == 'y') or (confirm == 'yes')
+
+    def print_tweet(tweet, suffix=''):
+        screen_name = "%-15s" % (tweet['user']['screen_name'])
+        key = tracker.get_key_for_tweet(tweet)
+        prefix = "%s) %s " % (key, screen_name)
+        print_wrap_to_prefix(prefix, tweet['text'] + suffix)
+
+    def display_tweets(tweets):
+        if len(tweets) == 0:
+            return
+        print
+        for tweet in tweets:
+            if tweet.has_key('retweeted_status'):
+                print_tweet(tweet['retweeted_status'], 
+                        " (retweeted by %s)" % (tweet['user']['screen_name']))
+            else:
+                print_tweet(tweet)
 
     class TimelinePlayback(object):
         def __init__(self, api_method, api_options, initial_count = 20):
@@ -94,7 +127,6 @@ if __name__ == '__main__':
             self.api_options = api_options
             self.initial_count = initial_count
             self.last_id = None
-            self.recent = []
 
         def update(self):
             try:
@@ -104,36 +136,21 @@ if __name__ == '__main__':
                 else:
                     options['since_id'] = self.last_id
                     options['count'] = 200
-                self.recent = self.api_method(**options)
+                recent = self.api_method(**options)
             except Exception, e:
                 print "(traceback playing back timeline)"
-                print traceback.print_exc()
-            self.recent.reverse()
+                traceback.print_exc()
+                return
+            recent.reverse()
             # issue tokens
-            for update in self.recent:
+            for update in recent:
                 tracker.add(update)
                 if update.has_key('retweeted_status'):
                     tracker.add(update['retweeted_status'])
             # update last id
-            if len(self.recent) > 0:
-                self.last_id = self.recent[-1]['id']
-
-        def display(self):
-            if len(self.recent) == 0:
-                return
-            def print_update(update, suffix=''):
-                screen_name = "%-15s" % (update['user']['screen_name'])
-                key = tracker.get_key(update['id'])
-                prefix = "%s) %s " % (key, screen_name)
-                print_wrap_to_prefix(prefix, update['text'] + suffix)
-            print
-            for update in self.recent:
-                if update.has_key('retweeted_status'):
-                    print_update(update['retweeted_status'], " (retweeted by %s)" % (update['user']['screen_name']))
-                else:
-                    print_update(update)
-
-            readline.redisplay()
+            if len(recent) > 0:
+                self.last_id = recent[-1]['id']
+            return recent
 
     username_re = re.compile(r'[^\@]*(\@[a-zA-Z0-9]+)')
     def get_usernames(status):
@@ -160,11 +177,16 @@ if __name__ == '__main__':
         def __init__(self, nstored=10000):
             self.nstored = nstored
             self.last_id = 0
-            self.tbl = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+            self.tbl = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
             self.base = len(self.tbl)
             self.key_to_tweet = {}
             self.twitter_to_key = {}
             self.seen_users = set()
+
+        def get_cached_tweets(self):
+            cache = self.key_to_tweet.values()
+            sort_tweets_by_id(cache)
+            return cache
 
         def make_key(self, i):
             i1 = i % self.base
@@ -178,9 +200,40 @@ if __name__ == '__main__':
             self.twitter_to_key.pop(tweet['id'])
 
         def add(self, tweet):
-            # look up our database object
+            # look up our database object (or make it)
             obj = Tweet.get_or_make(tweet)
-            print obj
+            self.cache_tweet(tweet)
+
+        def get_tweet_for_id(self, twitter_id):
+            # if we can, retrieve from our DB
+            obj = Tweet.get_by_status_id(twitter_id)
+            if obj is not None:
+                tweet = json.loads(obj.json)
+                self.cache_tweet(tweet)
+                return tweet
+            # else, pull it via the API
+            try:
+                print "pull", twitter_id
+                tweet = twitter.statuses.show(id=twitter_id)
+            except Exception, e:
+                print "(traceback getting tweet)"
+                traceback.print_exc()
+                return None
+            # add it to the database, cache it
+            self.add(tweet)
+            return tweet
+
+        def get_replies_to_tweet(self, tweet):
+            replies = [json.loads(t.json) for t in Tweet.get_replies_to_status_id(tweet['id'])]
+            map(self.cache_tweet, replies)
+            return replies
+
+        def cache_tweet(self, tweet):
+            # is it already cached?
+            key = self.get_key_for_tweet(tweet)
+            if key is not None:
+                return key
+            # calculate our 'A9' style key
             key = self.make_key(self.last_id)
             # remove something to limit memory use
             remove_key = self.make_key((self.last_id - self.nstored) % (self.base * self.base))
@@ -196,11 +249,11 @@ if __name__ == '__main__':
             self.seen_users.add(tweet['user']['screen_name'])
             return key
 
-        def get_tweet(self, key):
+        def get_tweet_for_key(self, key):
             return self.key_to_tweet.get(key, None)
 
-        def get_key(self, twitter_id):
-            return self.twitter_to_key.get(twitter_id, None)
+        def get_key_for_tweet(self, tweet):
+            return self.twitter_to_key.get(tweet['id'], None)
 
     tracker = TweetTracker()
 
@@ -244,9 +297,20 @@ if __name__ == '__main__':
             self.go_in(0)
 
         def update(self):
-            for timeline in timelines:
-                timeline.update()
-                timeline.display()
+            def _update():
+                # try and suppress tweets that come through in multiple
+                # timelines, eg. @replies from people we follow
+                printed = set()
+                for timeline in timelines:
+                    recent = filter(lambda tweet: tweet['id'] not in printed,
+                            timeline.update())
+                    map(lambda tweet: printed.add(tweet['id']), recent)
+                    display_tweets(recent)
+            try:
+                _update()
+            except:
+                print "exception during timeline update"
+                traceback.print_exc()
             self.go_in(self.update_delay)
 
         def go_in(self, secs):
@@ -304,7 +368,7 @@ if __name__ == '__main__':
         __metaclass__ = CompletionMeta
         commands = ['delete']
         def __call__(self, command, what):
-            tweet = tracker.get_tweet(what)
+            tweet = tracker.get_tweet_for_key(what)
             twitter.statuses.destroy(id=tweet['id'])
 
     class DeleteLast(object):
@@ -357,7 +421,7 @@ if __name__ == '__main__':
         __metaclass__ = CompletionMeta
         commands = ['rt']
         def __call__(self, command, what):
-            tweet = tracker.get_tweet(what)
+            tweet = tracker.get_tweet_for_key(what)
             twitter.statuses.retweet(id=tweet['id'])
 
     class Reply(object):
@@ -368,7 +432,7 @@ if __name__ == '__main__':
                 print "usage: reply <code> <status>"
                 return
             reply_to_key, arg = cmd_and_arg(what)
-            tweet = tracker.get_tweet(reply_to_key)
+            tweet = tracker.get_tweet_for_key(reply_to_key)
             if tweet is None:
                 print "reply to unknown tweet!"
                 return
@@ -389,9 +453,8 @@ if __name__ == '__main__':
             # ignore null tweet attempts
             if what == '':
                 return
-            print "tweet: %s" % (what)
-            confirm = raw_input("confirm? ")
-            if confirm.startswith('y'):
+            print_wrap_to_prefix("send tweet ", what)
+            if confirm():
                 update = {}
                 if in_reply_to is not None:
                     update['in_reply_to_status_id'] = in_reply_to
@@ -402,7 +465,7 @@ if __name__ == '__main__':
         __metaclass__ = CompletionMeta
         commands = ['info']
         def __call__(self, command, what):
-            tweet = tracker.get_tweet(what)
+            tweet = tracker.get_tweet_for_key(what)
             if not tweet:
                 print "can't find tweet"
             print "Created: %s" % (tweet['created_at'])
@@ -421,9 +484,10 @@ if __name__ == '__main__':
         __metaclass__ = CompletionMeta
         commands = ['dumptweet']
         def __call__(self, command, what):
-            tweet = tracker.get_tweet(what)
+            tweet = tracker.get_tweet_for_key(what)
             if not tweet:
                 print "can't find tweet"
+                return
             pprint(tweet)
 
     class Search(object):
@@ -435,8 +499,70 @@ if __name__ == '__main__':
     class Thread(object):
         __metaclass__ = CompletionMeta
         commands = ['thread']
+
         def __call__(self, command, what):
-            pass
+            tweet = tracker.get_tweet_for_key(what)
+            if not tweet:
+                print "can't find tweet"
+                return
+            # for each tweet;
+            #  -> if it replies, add that tweet to our 'to examine' list
+            #  -> find the tweets that reply to it. add the to our 'to 
+            #     examine' list (after this tweet)
+            #  -> sort by twitter ID
+
+            thread = []
+            thread_ids = set()
+            examine = [ tweet ]
+
+            def append_to_thread(tweet):
+                thread_ids.add(tweet['id'])
+                thread.append(tweet)
+
+            while len(examine) > 0:
+                this_pass = list(examine)
+                examine = []
+                for tweet in this_pass:
+                    append_to_thread(tweet)
+                    # whatever this tweet replied to
+                    in_reply_to = tweet['in_reply_to_status_id']
+                    if in_reply_to is not None:
+                        reply = tracker.get_tweet_for_id(in_reply_to)
+                        if reply['id'] not in thread_ids:
+                            examine.append(reply)
+                    # whatever tweets replied to this tweet
+                    for reply in tracker.get_replies_to_tweet(tweet):
+                        if reply['id'] not in thread_ids:
+                            examine.append(reply)
+            sort_tweets_by_id(thread)
+            display_tweets(thread)
+
+    class Last(object):
+        __metaclass__ = CompletionMeta
+        commands = ['last']
+        def __call__(self, command, what):
+            try:
+                last = int(what)
+            except ValueError:
+                print "usage: last <n>"
+                return
+            display_tweets(tracker.get_cached_tweets()[-last:])
+
+    class Grep(object):
+        __metaclass__ = CompletionMeta
+        commands = ['grep']
+        def __call__(self, command, what):
+            try:
+                matcher = re.compile(what)
+            except:
+                print "grep: error compiling regular expression"
+                return
+            def match(tweet):
+                return matcher.search(tweet['user']['screen_name']) or \
+                        matcher.search(tweet['text'])
+            matches = filter(match, tracker.get_cached_tweets())
+            sort_tweets_by_id(matches)
+            display_tweets(matches)
 
     class UnFavourite(object):
         __metaclass__ = CompletionMeta
@@ -466,7 +592,7 @@ if __name__ == '__main__':
 
     while True:
             readline.redisplay()
-            line = raw_input(">> ")
+            line = get_line(">> ")
             cmd = None
             arg = None
             if line.startswith('/'):
@@ -482,7 +608,7 @@ if __name__ == '__main__':
                 except Exception, e:
                     if isinstance(e, SystemExit):
                         raise
-                    print traceback.print_exc()
+                    traceback.print_exc()
             else:
                 print "unknown command."
             readline.set_completer(smart_complete.complete)
