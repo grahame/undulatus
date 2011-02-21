@@ -4,13 +4,9 @@ import readline, itertools, sys, os, signal, threading, traceback, re, json
 from twitter.oauth import OAuth, write_token_file, read_token_file
 from twitter.api import Twitter, TwitterError
 from pprint import pprint
+from tweetdb import Tweet, DBWrapper
 
-from django.core.management import setup_environ
-import settings
-setup_environ(settings)
-from tweets.models import Tweet
-
-
+db = DBWrapper()
 commands = {}
 class CompletionMeta(type):
     def __init__(cls, name, bases, dct):
@@ -201,14 +197,14 @@ if __name__ == '__main__':
 
         def add(self, tweet):
             # look up our database object (or make it)
-            obj = Tweet.get_or_make(tweet)
+            obj = db.get_or_make(tweet)
             self.cache_tweet(tweet)
 
         def get_tweet_for_id(self, twitter_id):
             # if we can, retrieve from our DB
-            obj = Tweet.get_by_status_id(twitter_id)
+            obj = db.get_by_status_id(twitter_id)
             if obj is not None:
-                tweet = json.loads(obj.json)
+                tweet = obj.get_json()
                 self.cache_tweet(tweet)
                 return tweet
             # else, pull it via the API
@@ -224,7 +220,7 @@ if __name__ == '__main__':
             return tweet
 
         def get_replies_to_tweet(self, tweet):
-            replies = [json.loads(t.json) for t in Tweet.get_replies_to_status_id(tweet['id'])]
+            replies = [t.get_json() for t in db.get_replies_to_status_id(tweet['id'])]
             map(self.cache_tweet, replies)
             return replies
 

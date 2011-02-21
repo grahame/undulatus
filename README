@@ -6,16 +6,13 @@ See the file 'LICENSE' for licensing and copyright information.
 You'll need to have ptt installed:
 http://mike.verdone.ca/twitter/
 
-You'll also need Django 1.2 installed. All tweets are stored in an SQL
-database for archival purposes.
+You'll also need sqlalchemy 0.6 installed.
+All tweets are stored in an SQL database for archival / future analysis.
 
 Things are pretty rough right now. Make sure you use the 'twitter' 
 command from 'ptt' to authorize 'ptt' and 'undulatus' to use your 
 twitter account.
 
-Then, initialise the database:
-  python manage.py syncdb
-
-Finally, run the Undulatus shell:
-  ./shell.py
+Then just launch undulatus:
+./undulatus.py
 
