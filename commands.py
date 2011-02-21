@@ -1,5 +1,5 @@
 
-import sys
+import sys, re
 from util import *
 
 def get_commands(twitter, tracker, updates):
@@ -188,7 +188,6 @@ def get_commands(twitter, tracker, updates):
             map(lambda tweet: tracker.add(tweet), tweets)
             sort_tweets_by_id(tweets)
             tracker.display_tweets(tweets)
-
 
     class Thread(Command):
         commands = ['thread']

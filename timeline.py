@@ -1,4 +1,6 @@
 
+import traceback
+
 class TimelinePlayback(object):
     def __init__(self, tracker, api_method, api_options, initial_count = 20):
         self.tracker = tracker

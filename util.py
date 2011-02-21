@@ -1,10 +1,17 @@
 
-import re
+import re, sys, traceback, itertools
 
 def debug(f):
     def __debug(*args, **kwargs):
-        rv = f(*args, **kwargs)
+        try:
+            rv = f(*args, **kwargs)
+        except:
+            # cover case of things that swallow exceptions above us
+            print >>sys.stderr, "(debug decorator) exception in wrapped function"
+            traceback.print_exc()
+            raise
         print >> sys.stderr, "%s(%s, %s) -> %s" % (f.__name__, repr(args), repr(kwargs), repr(rv))
+        return rv
     return __debug
 
 def pairwise(iterable):
@@ -64,7 +71,6 @@ def eof_help():
 import readline
 # set up readline on module import
 # seems to be associated with source file
-readline.parse_and_bind('tab: complete')
 delims = readline.get_completer_delims()
 # remove / from delims as that is our command char
 delims = ''.join(filter(lambda x: x != '/', delims))
@@ -72,8 +78,10 @@ readline.set_completer_delims(delims)
 
 def get_line(prompt, completer):
     # set up completion
+    readline.parse_and_bind('tab: complete')
+    def c(*args, **kwargs):
+        print args, kwargs
     readline.set_completer(completer)
-    print "set", completer
     try:
         return raw_input(prompt)
     except EOFError:

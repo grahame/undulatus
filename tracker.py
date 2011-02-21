@@ -1,6 +1,7 @@
 
 from tweetdb import Tweet, DBWrapper
 from util import *
+import traceback
 
 class TweetTracker(object):
     def __init__(self, twitter, nstored=10000):

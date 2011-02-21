@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 
-import readline, itertools, sys, os, signal, threading, traceback, re, json
-from twitter.oauth import OAuth, write_token_file, read_token_file
-from twitter.api import Twitter, TwitterError
+import readline, sys, os, threading, traceback
 from pprint import pprint
 
 from commands import get_commands
@@ -11,6 +9,9 @@ from util import *
 from timeline import TimelinePlayback
 
 if __name__ == '__main__':
+    from twitter.oauth import OAuth, write_token_file, read_token_file
+    from twitter.api import Twitter, TwitterError
+    # fix me, this shouldn't be here
     CONSUMER_KEY='uS6hO2sV6tDKIOeVjhnFnQ'
     CONSUMER_SECRET='MEYTOS97VvlHX7K1rwHPEqVpTSqZ71HtvoK4sVuYk'
     oauth_filename = os.path.expanduser(os.environ.get('HOME', '') + os.sep + '.twitter_oauth')
