@@ -1,3 +1,19 @@
 
-- reply all includes your own username
+Hit list:
+  - reply all includes your own username
+  - confirmation should be required for RTs
+  - unescape &lt; and friends
+  - uniqueness should take into account embedded RTs
+  - show times in local timezone, with 'x ago'
+  - should be able to view recent tweets for a user
+  - direct messages received (timeline? sep?)
+
+Long term:
+  - url shortening (optional, how?)
+  - whois should show if they follow you?
+  - track follows and unfollows
+  - searching (possibly ongoing? add a timeline?)
+  - piping? sorting? how overengineered and crazy do we want to get?
+  - save out tweets (to json? what? text?)
+  - show top sources of tweets in cache
 
