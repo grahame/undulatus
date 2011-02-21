@@ -197,14 +197,13 @@ if __name__ == '__main__':
 
         def add(self, tweet):
             # look up our database object (or make it)
-            obj = db.get_or_make(tweet)
+            db.get_or_make(tweet)
             self.cache_tweet(tweet)
 
         def get_tweet_for_id(self, twitter_id):
             # if we can, retrieve from our DB
-            obj = db.get_by_status_id(twitter_id)
-            if obj is not None:
-                tweet = obj.get_json()
+            tweet = db.get_by_status_id(twitter_id)
+            if tweet is not None:
                 self.cache_tweet(tweet)
                 return tweet
             # else, pull it via the API
@@ -220,7 +219,7 @@ if __name__ == '__main__':
             return tweet
 
         def get_replies_to_tweet(self, tweet):
-            replies = [t.get_json() for t in db.get_replies_to_status_id(tweet['id'])]
+            replies = db.get_replies_to_status_id(tweet['id'])
             map(self.cache_tweet, replies)
             return replies
 

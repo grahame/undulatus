@@ -24,41 +24,52 @@ class Tweet(Base):
 
 class DBWrapper(object):
     def __init__(self):
-        engine = create_engine('sqlite:///undulatus2.db', echo=False)
+        engine = create_engine('sqlite:///undulatus.db', echo=False)
         Tweet.metadata.create_all(engine)
         from sqlalchemy.orm import sessionmaker
         self.Session = sessionmaker(bind=engine)
-        self.session = self.Session()
 
-    def get_by_status_id(self, status_id):
+    def _obj_for_status_id(self, status_id):
         try:
-            return self.session.query(Tweet).filter(Tweet.status_id==str(status_id)).one()
+            session = self.Session()
+            return session.query(Tweet).filter(Tweet.status_id==str(status_id)).one()
         except NoResultFound:
             return None
 
+    def get_by_status_id(self, status_id):
+            obj = self._obj_for_status_id(status_id)
+            if obj is not None:
+                return obj.get_json()
+            else:
+                return None
+
     def get_replies_to_status_id(self, status_id):
-        return self.session.query(Tweet).filter(Tweet.in_reply_to_status_id==status_id).all()
+        session = self.Session()
+        return [t.get_json() for t in session.query(Tweet).filter(Tweet.in_reply_to_status_id==status_id).all()]
 
     def get_or_make(self, tweet):
-        obj = self.get_by_status_id(tweet['id'])
-        if obj is not None:
+        def _get_or_make(tweet):
+            obj = self._obj_for_status_id(tweet['id'])
+            if obj is not None:
+                return obj
+
+            attrs = {
+                    'status_id' : str(tweet['id']),
+                    'screen_name' : tweet['user']['screen_name'],
+                    'in_reply_to_status_id' : str(tweet['in_reply_to_status_id']),
+                    'in_reply_to_screen_name' : tweet['in_reply_to_screen_name'],
+                    'text' : tweet['text'],
+                    'jsonz' : zlib.compress(json.dumps(tweet))
+                    }
+            if tweet.has_key('retweeted_status'):
+                retweet_json = tweet['retweeted_status']
+                retweet = _get_or_make(retweet_json)
+                attrs['embedded_retweet_id'] = retweet.status_id
+
+            session = self.Session()
+            obj = Tweet(**attrs)
+            session.add(obj)
+            session.commit()
             return obj
-
-        attrs = {
-                'status_id' : str(tweet['id']),
-                'screen_name' : tweet['user']['screen_name'],
-                'in_reply_to_status_id' : str(tweet['in_reply_to_status_id']),
-                'in_reply_to_screen_name' : tweet['in_reply_to_screen_name'],
-                'text' : tweet['text'],
-                'jsonz' : zlib.compress(json.dumps(tweet))
-                }
-        if tweet.has_key('retweeted_status'):
-            retweet_json = tweet['retweeted_status']
-            retweet = self.get_or_make(retweet_json)
-            attrs['embedded_retweet_id'] = retweet.status_id
-
-        obj = Tweet(**attrs)
-        self.session.add(obj)
-        self.session.commit()
-        return obj
+        _get_or_make(tweet)
 
