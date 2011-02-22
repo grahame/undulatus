@@ -145,7 +145,7 @@ def get_commands(twitter, tracker, updates):
         commands = ['info']
         def __call__(self, command, what):
             def display_info(tweet):
-                print "Created: %s" % (tweet['created_at'])
+                print "Created: %s" % (tweet_ctime(tweet))
                 user = tweet['user']
                 print "User: `%s' / `%s' in `%s'" % (user['screen_name'], user['name'], user['location'])
                 if tweet.get('in_reply_to_screen_name'):

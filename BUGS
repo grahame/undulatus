@@ -8,7 +8,7 @@ Key:
 
 Hit list:
   - reply all includes your own username
-  - show times in local timezone, with 'x ago'
+  - show times with 'x ago'
   - should be able to view recent tweets for a user
   - direct messages received (timeline? sep?)
   - prime the cache when we start up, feed in the last N tweets

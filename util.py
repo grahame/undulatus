@@ -1,5 +1,5 @@
 
-import re, sys, traceback, itertools
+import re, sys, traceback, itertools, time, calendar
 
 def debug(f):
     def __debug(*args, **kwargs):
@@ -21,6 +21,12 @@ def debug(f):
 # we thus only have to unescape &lt; and &gt;
 def tweet_text(tweet):
     return tweet['text'].replace('&lt;', '<').replace('&gt;', '>')
+
+def tweet_unixtime(tweet):
+    return calendar.timegm(time.strptime(tweet['created_at'], '%a %b %d %H:%M:%S +0000 %Y'))
+
+def tweet_ctime(tweet):
+    return time.ctime(tweet_unixtime(tweet))
 
 def pairwise(iterable):
     "s -> (s0,s1), (s1,s2), (s2, s3), ..."
