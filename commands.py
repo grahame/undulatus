@@ -277,7 +277,7 @@ def get_commands(twitter, tracker, updates):
                 print "You follow %s." % (user['screen_name'])
             else:
                 print "You do not follow %s." % (user['screen_name'])
-            print_wrap_to_prefix("Description: ", user['description'])
+            print_wrap_to_prefix("Description: ", user['description'] or '')
 
     return cmds
 

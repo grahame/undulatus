@@ -17,14 +17,13 @@ Hit list:
   in the database
   - /whois None text field bug
 
-
 Long term:
   - url shortening (optional, how?)
-  - whois should show if they follow you?
-  - track follows and unfollows
   - searching (possibly ongoing? add a timeline?)
   - piping? sorting? how overengineered and crazy do we want to get?
   - save out tweets (to json? what? text?)
   - show top sources of tweets in cache
   - command start a python shell to inspect what's going on
+  - track follows and unfollows
+  - whois should show if they follow you?
 
