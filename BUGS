@@ -8,16 +8,14 @@ Key:
 
 Hit list:
   - reply all includes your own username
-  - confirmation should be required for RTs
-  - uniqueness should take into account embedded RTs
   - show times in local timezone, with 'x ago'
   - should be able to view recent tweets for a user
   - direct messages received (timeline? sep?)
   - prime the cache when we start up, feed in the last N tweets
   in the database
-  - /whois None text field bug
 
 Long term:
+  - block updates while typing
   - url shortening (optional, how?)
   - searching (possibly ongoing? add a timeline?)
   - piping? sorting? how overengineered and crazy do we want to get?
@@ -26,4 +24,6 @@ Long term:
   - command start a python shell to inspect what's going on
   - track follows and unfollows
   - whois should show if they follow you?
+  - improve RT handling in the code. uniqueness should take into account embedded RTs
+    stop issueing key codes to RT parent tweets? not sure about that one
 

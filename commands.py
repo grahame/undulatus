@@ -101,7 +101,10 @@ def get_commands(twitter, tracker, updates):
         commands = ['rt']
         def __call__(self, command, what):
             tweet = tracker.get_tweet_for_key(what)
-            twitter.statuses.retweet(id=tweet['id'])
+            print "Retweet following tweet by `%s'?" % (tweet['user']['screen_name'])
+            tracker.print_tweet(tweet)
+            if confirm():
+                twitter.statuses.retweet(id=tweet['id'])
 
     class Reply(Command):
         commands = ['reply', 'replyall']
@@ -119,7 +122,7 @@ def get_commands(twitter, tracker, updates):
                 return
             usernames = [ tweet['user']['screen_name'] ]
             if command == 'replyall':
-                usernames += get_usernames(tweet['text'])
+                usernames += get_usernames(tweet_text(tweet))
             usernames = uniq_usernames(usernames)
             arg = "%s %s" % (' '.join("@" + u for u in usernames), arg)
             Say()(command, arg, in_reply_to=tweet['id'])
@@ -141,20 +144,27 @@ def get_commands(twitter, tracker, updates):
     class Info(Command):
         commands = ['info']
         def __call__(self, command, what):
+            def display_info(tweet):
+                print "Created: %s" % (tweet['created_at'])
+                user = tweet['user']
+                print "User: `%s' / `%s' in `%s'" % (user['screen_name'], user['name'], user['location'])
+                if tweet.get('in_reply_to_screen_name'):
+                    print "In reply to user:", tweet['in_reply_to_screen_name']
+                if tweet.get('in_reply_to_status_id'):
+                    print "In reply to status:", tweet['in_reply_to_status_id']
+                if tweet.get('truncated') == True:
+                    print "Tweet was truncated."
+                print "Status:"
+                print_wrap_to_prefix("  ", tweet_text(tweet))
+                if tweet.has_key('retweeted_status'):
+                    print "Tweet includes a retweet:"
+                    display_info(tweet['retweeted_status'])
+
             tweet = tracker.get_tweet_for_key(what)
             if not tweet:
                 print "can't find tweet"
-            print "Created: %s" % (tweet['created_at'])
-            user = tweet['user']
-            print "User: `%s' / `%s' in `%s'" % (user['screen_name'], user['name'], user['location'])
-            if tweet.get('in_reply_to_screen_name'):
-                print "In reply to user:", tweet['in_reply_to_screen_name']
-            if tweet.get('in_reply_to_status_id'):
-                print "In reply to status:", tweet['in_reply_to_status_id']
-            if tweet.get('truncated') == True:
-                print "Tweet was truncated."
-            print "Status:"
-            print tweet['text']
+                return
+            display_info(tweet)
 
     class Dump(Command):
         commands = ['dumptweet']
@@ -257,7 +267,7 @@ def get_commands(twitter, tracker, updates):
                 return
             def match(tweet):
                 return matcher.search(tweet['user']['screen_name']) or \
-                        matcher.search(tweet['text'])
+                        matcher.search(tweet_text(tweet))
             matches = filter(match, tracker.get_cached_tweets())
             sort_tweets_by_id(matches)
             tracker.display_tweets(matches)
@@ -271,12 +281,14 @@ def get_commands(twitter, tracker, updates):
         commands = ['whois']
         def __call__(self, command, what):
             user = twitter.users.show(id=what)
-            print "`%s' / `%s' in `%s'" % (user['screen_name'], user['name'], user['location'])
+            print "%s in %s" % (user['name'], user['location'])
             print "Followers: %8d  Following: %8d" % (user['followers_count'], user['friends_count'])
             if user['following']:
                 print "You follow %s." % (user['screen_name'])
             else:
                 print "You do not follow %s." % (user['screen_name'])
+            if user['verified'] == True:
+                print "User is verified."
             print_wrap_to_prefix("Description: ", user['description'] or '')
 
     return cmds

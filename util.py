@@ -19,8 +19,8 @@ def debug(f):
 # are escaped. We're using JSON and according to:
 #     http://code.google.com/p/twitter-api/issues/detail?id=1695
 # we thus only have to unescape &lt; and &gt;
-def text_unescape(text):
-    return text.replace('&lt;', '<').replace('&gt;', '>')
+def tweet_text(tweet):
+    return tweet['text'].replace('&lt;', '<').replace('&gt;', '>')
 
 def pairwise(iterable):
     "s -> (s0,s1), (s1,s2), (s2, s3), ..."

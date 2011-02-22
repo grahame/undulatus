@@ -6,7 +6,7 @@ from sqlalchemy.orm import relationship, backref
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from sqlalchemy.ext.declarative import declarative_base
 import zlib, json
-from util import text_unescape
+from util import tweet_text
 
 Base = declarative_base()
 class Tweet(Base):
@@ -29,7 +29,7 @@ class Tweet(Base):
                 'screen_name' : tweet['user']['screen_name'],
                 'in_reply_to_status_id' : str(tweet['in_reply_to_status_id']),
                 'in_reply_to_screen_name' : tweet['in_reply_to_screen_name'],
-                'text' : text_unescape(tweet['text']),
+                'text' : tweet_text(tweet),
                 'jsonz' : zlib.compress(json.dumps(tweet))
                 }
         if tweet.has_key('retweeted_status'):
