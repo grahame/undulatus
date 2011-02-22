@@ -97,7 +97,7 @@ def confirm():
     confirm = get_line("confirm? ", complete_nowt)
     return (confirm == 'y') or (confirm == 'yes')
 
-username_re = re.compile(r'[^\@]*(\@[a-zA-Z0-9]+)')
+username_re = re.compile(r'[^\@]*(\@[a-zA-Z0-9\_]+)')
 def get_usernames(status):
     usernames = []
     m = username_re.match(status)

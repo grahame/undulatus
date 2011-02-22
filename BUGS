@@ -1,5 +1,6 @@
 
 Hit list:
+  - include user IDs in the twitter DB
   - reply all includes your own username
   - confirmation should be required for RTs
   - unescape &lt; and friends
@@ -7,6 +8,9 @@ Hit list:
   - show times in local timezone, with 'x ago'
   - should be able to view recent tweets for a user
   - direct messages received (timeline? sep?)
+  - prime the cache when we start up, feed in the last N tweets
+  in the database
+  - /whois None text field bug
 
 Long term:
   - url shortening (optional, how?)
@@ -16,4 +20,5 @@ Long term:
   - piping? sorting? how overengineered and crazy do we want to get?
   - save out tweets (to json? what? text?)
   - show top sources of tweets in cache
+  - command start a python shell to inspect what's going on
 
