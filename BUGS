@@ -7,10 +7,8 @@ Key:
   so we don't have to redo all the validation everywhere
 
 Hit list:
-  - include user IDs in the twitter DB
   - reply all includes your own username
   - confirmation should be required for RTs
-  - unescape &lt; and friends
   - uniqueness should take into account embedded RTs
   - show times in local timezone, with 'x ago'
   - should be able to view recent tweets for a user
