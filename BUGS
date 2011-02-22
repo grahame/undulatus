@@ -1,4 +1,11 @@
 
+
+Key:
+  - multiple user support; just rebind all the commands 
+  on user switch (neat!!)
+  - change comamnds to have help, a better argument parser
+  so we don't have to redo all the validation everywhere
+
 Hit list:
   - include user IDs in the twitter DB
   - reply all includes your own username
@@ -11,6 +18,7 @@ Hit list:
   - prime the cache when we start up, feed in the last N tweets
   in the database
   - /whois None text field bug
+
 
 Long term:
   - url shortening (optional, how?)
