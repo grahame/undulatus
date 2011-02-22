@@ -6,12 +6,14 @@ from sqlalchemy.orm import relationship, backref
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from sqlalchemy.ext.declarative import declarative_base
 import zlib, json
+from util import text_unescape
 
 Base = declarative_base()
 class Tweet(Base):
     __tablename__ = 'tweets'
     status_id = Column(String, primary_key=True, index=True)
     screen_name = Column(String(16), nullable=False, index=True)
+    user_id = Column(String, index=True)
     in_reply_to_screen_name = Column(String(16))
     in_reply_to_status_id = Column(String, index=True)
     embedded_retweet_id = Column(String, ForeignKey('tweets.status_id'))
@@ -19,8 +21,35 @@ class Tweet(Base):
     text = Column(String)
     jsonz = Column(LargeBinary)
 
+    @classmethod
+    def _json_to_attrs(cls, tweet):
+        attrs = {
+                'status_id' : str(tweet['id']),
+                'user_id' : str(tweet['user']['id']),
+                'screen_name' : tweet['user']['screen_name'],
+                'in_reply_to_status_id' : str(tweet['in_reply_to_status_id']),
+                'in_reply_to_screen_name' : tweet['in_reply_to_screen_name'],
+                'text' : text_unescape(tweet['text']),
+                'jsonz' : zlib.compress(json.dumps(tweet))
+                }
+        if tweet.has_key('retweeted_status'):
+            attrs['embedded_retweet_id'] = tweet['retweeted_status']['id']
+        return attrs
+
+    @classmethod
+    def from_json(cls, json):
+            attrs = cls._json_to_attrs(json)
+            obj = cls(**attrs)
+            return obj
+
     def get_json(self):
         return json.loads(zlib.decompress(self.jsonz))
+
+    # eg. if we've changed DB schema
+    def update_from_jsonz(self):
+        json = self.get_json()
+        for attr in json:
+            setattr(self, attr, json[attr])
 
 class DBWrapper(object):
     def __init__(self):
@@ -53,21 +82,14 @@ class DBWrapper(object):
             if obj is not None:
                 return obj
 
-            attrs = {
-                    'status_id' : str(tweet['id']),
-                    'screen_name' : tweet['user']['screen_name'],
-                    'in_reply_to_status_id' : str(tweet['in_reply_to_status_id']),
-                    'in_reply_to_screen_name' : tweet['in_reply_to_screen_name'],
-                    'text' : tweet['text'],
-                    'jsonz' : zlib.compress(json.dumps(tweet))
-                    }
+            retweet_status_id = None
+            # recurse, make the retweet
             if tweet.has_key('retweeted_status'):
                 retweet_json = tweet['retweeted_status']
-                retweet = _get_or_make(retweet_json)
-                attrs['embedded_retweet_id'] = retweet.status_id
+                _get_or_make(retweet_json)
 
             session = self.Session()
-            obj = Tweet(**attrs)
+            obj = Tweet.from_json(tweet)
             session.add(obj)
             session.commit()
             return obj

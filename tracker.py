@@ -75,7 +75,8 @@ class TweetTracker(object):
         twitter_id = tweet['id']
         self.key_to_tweet[key] = tweet
         self.twitter_to_key[twitter_id] = key
-        for username in get_usernames(tweet['text']):
+        text = text_unescape(tweet['text'])
+        for username in get_usernames(text):
             self.seen_users.add(username)
         self.seen_users.add(tweet['user']['screen_name'])
         return key
@@ -91,7 +92,8 @@ class TweetTracker(object):
             screen_name = "%-15s" % (tweet['user']['screen_name'])
             key = self.get_key_for_tweet(tweet)
             prefix = "%s) %s " % (key, screen_name)
-            print_wrap_to_prefix(prefix, tweet['text'] + suffix)
+            text = text_unescape(tweet['text'])
+            print_wrap_to_prefix(prefix, text + suffix)
 
         if len(tweets) == 0:
             return

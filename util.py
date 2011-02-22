@@ -14,6 +14,14 @@ def debug(f):
         return rv
     return __debug
 
+# unescape twitter 'text' messages, which according to:
+#     http://apiwiki.twitter.com/w/page/22554664/Return-Values
+# are escaped. We're using JSON and according to:
+#     http://code.google.com/p/twitter-api/issues/detail?id=1695
+# we thus only have to unescape &lt; and &gt;
+def text_unescape(text):
+    return text.replace('&lt;', '<').replace('&gt;', '>')
+
 def pairwise(iterable):
     "s -> (s0,s1), (s1,s2), (s2, s3), ..."
     a, b = itertools.tee(iterable)
