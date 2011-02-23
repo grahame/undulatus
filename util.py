@@ -25,6 +25,19 @@ def tweet_text(tweet):
 def tweet_unixtime(tweet):
     return calendar.timegm(time.strptime(tweet['created_at'], '%a %b %d %H:%M:%S +0000 %Y'))
 
+def tweet_ago(tweet):
+    ago = time.time() - tweet_unixtime(tweet)
+    if ago < 60:
+        return "%d seconds ago" % (ago)
+    if ago < 3600:
+        return "%d minutes ago" % (ago / 60.)
+    hours = ago / 3600.
+    days = hours // 24
+    hours -= 24 * days
+    if days > 0:
+        return "%d days, %d hours ago" % (days, hours)
+    return "%d hours ago" % (hours)
+
 def tweet_ctime(tweet):
     return time.ctime(tweet_unixtime(tweet))
 

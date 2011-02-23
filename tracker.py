@@ -15,7 +15,7 @@ class TweetTracker(object):
         self.seen_users = set()
         sys.stdout.write("loading recent tweets from database... ")
         sys.stdout.flush()
-        map(self.cache_tweet, self.db.get_recent(300))
+        map(self.cache_tweet, reversed(self.db.get_recent(300)))
         sys.stdout.write("done! %d tweets loaded.\n" % (len(self.key_to_tweet)))
         sys.stdout.flush()
 
