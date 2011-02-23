@@ -11,8 +11,6 @@ Hit list:
   - show times with 'x ago'
   - should be able to view recent tweets for a user
   - direct messages received (timeline? sep?)
-  - prime the cache when we start up, feed in the last N tweets
-  in the database
 
 Long term:
   - block updates while typing

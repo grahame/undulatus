@@ -1,19 +1,23 @@
 
 from tweetdb import Tweet, DBWrapper
 from util import *
-import traceback
+import traceback, sys
 
 class TweetTracker(object):
-    def __init__(self, twitter, db, nstored=10000):
+    def __init__(self, twitter, db):
         self.twitter = twitter
         self.db = db
-        self.nstored = nstored
         self.last_id = 0
         self.tbl = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
         self.base = len(self.tbl)
         self.key_to_tweet = {}
         self.twitter_to_key = {}
         self.seen_users = set()
+        sys.stdout.write("loading recent tweets from database... ")
+        sys.stdout.flush()
+        map(self.cache_tweet, self.db.get_recent(300))
+        sys.stdout.write("done! %d tweets loaded.\n" % (len(self.key_to_tweet)))
+        sys.stdout.flush()
 
     def get_cached_tweets(self):
         cache = self.key_to_tweet.values()
@@ -24,12 +28,6 @@ class TweetTracker(object):
         i1 = i % self.base
         i2 = i / self.base
         return self.tbl[i2] + self.tbl[i1]
-
-    def remove(self, key):
-        tweet = self.twitter_to_key.pop(key, None)
-        if tweet is None:
-            return
-        self.twitter_to_key.pop(tweet['id'])
 
     def add(self, tweet):
         # look up our database object (or make it)
@@ -66,9 +64,6 @@ class TweetTracker(object):
             return key
         # calculate our 'A9' style key
         key = self.make_key(self.last_id)
-        # remove something to limit memory use
-        remove_key = self.make_key((self.last_id - self.nstored) % (self.base * self.base))
-        self.remove(remove_key)
         # update
         self.last_id = (self.last_id + 1) % (self.base * self.base)
         # copy ourself in

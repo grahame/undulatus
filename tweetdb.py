@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 
 from sqlalchemy import create_engine
-from sqlalchemy import Table, Column, Integer, String, MetaData, ForeignKey, LargeBinary
+from sqlalchemy import Table, Column, Integer, String, MetaData, ForeignKey, LargeBinary, BigInteger
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.sql.expression import cast
+from sqlalchemy import desc
 import zlib, json
 from util import tweet_text
 
@@ -98,6 +100,13 @@ class DBWrapper(object):
     def get_replies_to_status_id(self, status_id):
         session = self.Session()
         return [t.get_json() for t in session.query(Tweet).filter(Tweet.in_reply_to_status_id==status_id).all()]
+
+    # will probably break when twitter hits 63 bit status IDs..
+    def get_recent(self, n):
+        session = self.Session()
+        big_status = cast(Tweet.status_id, BigInteger)
+        return [t.get_json() for t in \
+                session.query(Tweet).order_by(desc(big_status))[:n]]
 
     def make(self, tweet):
         def _make(tweet):
