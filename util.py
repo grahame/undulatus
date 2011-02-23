@@ -1,5 +1,5 @@
 
-import re, sys, traceback, itertools, time, calendar
+import re, os, sys, traceback, itertools, time, calendar
 
 def debug(f):
     def __debug(*args, **kwargs):
@@ -131,4 +131,17 @@ def uniq_usernames(usernames):
         seen.add(lu)
         rv.append(username)
     return rv
+
+def get_dbfile(screen_name):
+    undulatus_dir = os.path.expanduser('~/.undulatus')
+    # make the dir if it's not there
+    if not os.access(undulatus_dir, os.R_OK):
+        try: os.mkdir(undulatus_dir)
+        except:
+            print >>sys.stderr, "unable to make directory `%s'." % undulatus_dir
+            os.exit(1)
+    # fix the permissions on it
+    os.chmod(undulatus_dir, 0700)
+    dbfile = os.path.join(undulatus_dir, '%s.db' % screen_name)
+    return dbfile
 

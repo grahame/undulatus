@@ -4,9 +4,9 @@ from util import *
 import traceback
 
 class TweetTracker(object):
-    def __init__(self, twitter, nstored=10000):
+    def __init__(self, twitter, db, nstored=10000):
         self.twitter = twitter
-        self.db = DBWrapper()
+        self.db = db
         self.nstored = nstored
         self.last_id = 0
         self.tbl = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
@@ -33,7 +33,7 @@ class TweetTracker(object):
 
     def add(self, tweet):
         # look up our database object (or make it)
-        self.db.get_or_make(tweet)
+        self.db.make(tweet)
         self.cache_tweet(tweet)
 
     def get_tweet_for_id(self, twitter_id):

@@ -7,23 +7,63 @@ from commands import get_commands
 from tracker import TweetTracker
 from util import *
 from timeline import TimelinePlayback
+import tweetdb, base64
+
+def splash():
+    print """\
+Undulatus
+Copyright (C) 2011 Grahame Bowland <grahame@angrygoats.net>
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+See the file 'LICENSE' included with this software for more detail.
+"""
+
+def obsc():
+    # pretty pointless, and IMHO OAuth is broken for standalone, open source applications
+    return map(base64.decodestring,
+            ('aWdpcGRPVXp0dHJWVWF5Sk9kTVpLQQ==', 'Q1U2RHpFNzEwY1NFRGN3WnUzS0NsdEt1V0V0TmNqVVBVc1Zzb25abDVCOA=='))
 
 if __name__ == '__main__':
+    splash()
+
     from twitter.oauth import OAuth, write_token_file, read_token_file
     from twitter.api import Twitter, TwitterError
-    # fix me, this shouldn't be here
-    CONSUMER_KEY='uS6hO2sV6tDKIOeVjhnFnQ'
-    CONSUMER_SECRET='MEYTOS97VvlHX7K1rwHPEqVpTSqZ71HtvoK4sVuYk'
-    oauth_filename = os.path.expanduser(os.environ.get('HOME', '') + os.sep + '.twitter_oauth')
-    oauth_token, oauth_token_secret = read_token_file(oauth_filename)
+
+    from optparse import OptionParser
+    parser = OptionParser()
+    (options, args) = parser.parse_args()
+    screen_name = args[0]
+
+    dbfile = get_dbfile(screen_name)
+    db = tweetdb.DBWrapper(dbfile)
+    oauth_token, oauth_token_secret = db.tokens_for_screen_name(screen_name)
+
+    if oauth_token is None:
+        from twitter.oauth_dance import oauth_dance
+        from tempfile import mkstemp
+        fd, filepath = mkstemp()
+        args = ["undulatus"] + obsc() + [filepath]
+        oauth_dance(*args)
+        oauth_token, oauth_token_secret = read_token_file(filepath)
+        os.unlink(filepath)
+        print oauth_token, oauth_token_secret
+        db.add_tokens(screen_name, oauth_token, oauth_token_secret)
+
     twitter = Twitter(
         auth=OAuth(
-            oauth_token, oauth_token_secret, CONSUMER_KEY, CONSUMER_SECRET),
+            oauth_token, oauth_token_secret, *obsc()),
         secure=True,
         api_version='1',
         domain='api.twitter.com')
 
-    tracker = TweetTracker(twitter)
+    tracker = TweetTracker(twitter, db)
     timelines = [
             TimelinePlayback(tracker, twitter.statuses.friends_timeline,
                 {'include_rts' : True}),
@@ -92,21 +132,6 @@ if __name__ == '__main__':
             return self.prefix + self.matches[state] + ' '
 
     smart_complete = SmartCompletion()
-
-    print """\
-Undulatus
-Copyright (C) 2011 Grahame Bowland <grahame@angrygoats.net>
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-
-See the file 'LICENSE' included with this software for more detail.
-"""
 
     while True:
             line = get_line(">> ", smart_complete.complete)

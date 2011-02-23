@@ -51,12 +51,35 @@ class Tweet(Base):
         for attr in json:
             setattr(self, attr, json[attr])
 
+class OAuthTokens(Base):
+    __tablename__ = 'oauth_tokens'
+    screen_name = Column(String(16), primary_key=True)
+    oauth_token = Column(String, nullable=False)
+    oauth_token_secret = Column(String, nullable=False)
+
 class DBWrapper(object):
-    def __init__(self):
-        engine = create_engine('sqlite:///undulatus.db', echo=False)
+    def __init__(self, db_file_path):
+        engine = create_engine('sqlite:///%s' % db_file_path, echo=False)
         Tweet.metadata.create_all(engine)
+        OAuthTokens.metadata.create_all(engine)
         from sqlalchemy.orm import sessionmaker
         self.Session = sessionmaker(bind=engine)
+
+    def tokens_for_screen_name(self, screen_name):
+        try:
+            session = self.Session()
+            obj = session.query(OAuthTokens).filter(OAuthTokens.screen_name==str(screen_name)).one()
+            return obj.oauth_token, obj.oauth_token_secret
+        except NoResultFound:
+            return None, None
+
+    def add_tokens(self, screen_name, oauth_token, oauth_token_secret):
+        session = self.Session()
+        obj = OAuthTokens(screen_name=screen_name, 
+                oauth_token=oauth_token, 
+                oauth_token_secret=oauth_token_secret)
+        session.add(obj)
+        session.commit()
 
     def _obj_for_status_id(self, status_id):
         try:
@@ -76,8 +99,8 @@ class DBWrapper(object):
         session = self.Session()
         return [t.get_json() for t in session.query(Tweet).filter(Tweet.in_reply_to_status_id==status_id).all()]
 
-    def get_or_make(self, tweet):
-        def _get_or_make(tweet):
+    def make(self, tweet):
+        def _make(tweet):
             obj = self._obj_for_status_id(tweet['id'])
             if obj is not None:
                 return obj
@@ -86,12 +109,12 @@ class DBWrapper(object):
             # recurse, make the retweet
             if tweet.has_key('retweeted_status'):
                 retweet_json = tweet['retweeted_status']
-                _get_or_make(retweet_json)
+                _make(retweet_json)
 
             session = self.Session()
             obj = Tweet.from_json(tweet)
             session.add(obj)
             session.commit()
             return obj
-        _get_or_make(tweet)
+        _make(tweet)
 

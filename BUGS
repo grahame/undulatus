@@ -26,4 +26,5 @@ Long term:
   - whois should show if they follow you?
   - improve RT handling in the code. uniqueness should take into account embedded RTs
     stop issueing key codes to RT parent tweets? not sure about that one
+  - google translate integration
 
