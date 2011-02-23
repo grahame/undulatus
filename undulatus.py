@@ -100,7 +100,7 @@ if __name__ == '__main__':
             self.thread.start()
 
     updates = TimelineUpdates()
-    command_classes = get_commands(twitter, tracker, updates)
+    command_classes = get_commands(twitter, screen_name, tracker, updates)
 
     class SmartCompletion(object):
         def __init__(self):

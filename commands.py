@@ -2,7 +2,7 @@
 import sys, re
 from util import *
 
-def get_commands(twitter, tracker, updates):
+def get_commands(twitter, username, tracker, updates):
 
     cmds = {}
 
@@ -123,7 +123,9 @@ def get_commands(twitter, tracker, updates):
             usernames = [ tweet['user']['screen_name'] ]
             if command == 'replyall':
                 usernames += get_usernames(tweet_text(tweet))
-            usernames = uniq_usernames(usernames)
+            # unique usernames, and don't reply to ourselves
+            usernames = uniq_usernames(
+                    filter(lambda u: u != username, usernames))
             arg = "%s %s" % (' '.join("@" + u for u in usernames), arg)
             Say()(command, arg, in_reply_to=tweet['id'])
 
