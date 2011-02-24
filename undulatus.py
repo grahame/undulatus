@@ -134,7 +134,7 @@ if __name__ == '__main__':
     smart_complete = SmartCompletion()
 
     while True:
-            line = get_line(">> ", smart_complete.complete)
+            line = get_line("%s >> " % screen_name, smart_complete.complete)
             cmd = None
             arg = None
             if line.startswith('/'):

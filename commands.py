@@ -197,8 +197,8 @@ def get_commands(twitter, username, tracker, updates):
                     return
             count = count or 20
             tweets = twitter.statuses.user_timeline(screen_name=screen_name, count=count)
-            map(lambda tweet: tracker.add(tweet), tweets)
             sort_tweets_by_id(tweets)
+            map(lambda tweet: tracker.add(tweet), tweets)
             tracker.display_tweets(tweets)
 
     class Thread(Command):
