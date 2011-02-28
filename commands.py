@@ -14,8 +14,8 @@ def get_commands(twitter, username, tracker, updates):
             for command in cls.commands:
                 cmds['/' + command] = cls
 
-    class Command(object):
-        __metaclass__ = CommandMeta
+    class Command(object, metaclass=CommandMeta):
+        pass
 
     class Refresh(Command):
         commands = ['refresh']
@@ -43,7 +43,7 @@ def get_commands(twitter, username, tracker, updates):
             tweet = tracker.get_tweet_for_key(what)
             if tweet is not None:
                 screen_name = tweet['user']['screen_name']
-            print "Really report `%s' for spam (and block them)?" % (screen_name)
+            print("Really report `%s' for spam (and block them)?" % (screen_name))
             if confirm():
                 twitter.report_spam(id=screen_name)
 
@@ -59,7 +59,7 @@ def get_commands(twitter, username, tracker, updates):
     class BlockExists(Command):
         commands = ['blockexists']
         def __call__(self, command, what):
-            print twitter.blocks.exists(id=what)
+            print(twitter.blocks.exists(id=what))
 
     class Blocking(Command):
         commands = ['blocking']
@@ -67,9 +67,9 @@ def get_commands(twitter, username, tracker, updates):
             users = twitter.blocks.blocking()
             screen_names = [x['screen_name'] for x in users]
             screen_names.sort()
-            print "Blocking:"
+            print("Blocking:")
             for screen_name in screen_names:
-                print "    %s" % screen_name
+                print("    %s" % screen_name)
 
     class Delete(Command):
         commands = ['delete']
@@ -112,15 +112,15 @@ def get_commands(twitter, username, tracker, updates):
         def __call__(self, command, what):
             users = what.split()
             if len(users) != 2:
-                print "usage: /doesfollow subject_user test_user"
+                print("usage: /doesfollow subject_user test_user")
                 return
-            print twitter.friendships.exists(user_a = users[0], user_b = users[1])
+            print(twitter.friendships.exists(user_a = users[0], user_b = users[1]))
 
     class Retweet(Command):
         commands = ['rt']
         def __call__(self, command, what):
             tweet = tracker.get_tweet_for_key(what)
-            print "Retweet following tweet by `%s'?" % (tweet['user']['screen_name'])
+            print("Retweet following tweet by `%s'?" % (tweet['user']['screen_name']))
             tracker.print_tweet(tweet)
             if confirm():
                 twitter.statuses.retweet(id=tweet['id'])
@@ -129,22 +129,22 @@ def get_commands(twitter, username, tracker, updates):
         commands = ['reply', 'replyall']
         def __call__(self, command, what):
             if what is None:
-                print "usage: reply <code> <status>"
+                print("usage: reply <code> <status>")
                 return
             reply_to_key, arg = cmd_and_arg(what)
             tweet = tracker.get_tweet_for_key(reply_to_key)
             if tweet is None:
-                print "reply to unknown tweet!"
+                print("reply to unknown tweet!")
                 return
             if arg is None:
-                print "usage: reply <code> <status>"
+                print("usage: reply <code> <status>")
                 return
             usernames = [ tweet['user']['screen_name'] ]
             if command == 'replyall':
                 usernames += get_usernames(tweet_text(tweet))
             # unique usernames, and don't reply to ourselves
             usernames = uniq_usernames(
-                    filter(lambda u: u != username, usernames))
+                    [u for u in usernames if u != username])
             arg = "%s %s" % (' '.join("@" + u for u in usernames), arg)
             Say()(command, arg, in_reply_to=tweet['id'])
 
@@ -166,24 +166,24 @@ def get_commands(twitter, username, tracker, updates):
         commands = ['info']
         def __call__(self, command, what):
             def display_info(tweet):
-                print "Created: %s (%s)" % (tweet_ctime(tweet), tweet_ago(tweet))
+                print("Created: %s (%s)" % (tweet_ctime(tweet), tweet_ago(tweet)))
                 user = tweet['user']
-                print "User: `%s' / `%s' in `%s'" % (user['screen_name'], user['name'], user['location'])
+                print("User: `%s' / `%s' in `%s'" % (user['screen_name'], user['name'], user['location']))
                 if tweet.get('in_reply_to_screen_name'):
-                    print "In reply to user:", tweet['in_reply_to_screen_name']
+                    print("In reply to user:", tweet['in_reply_to_screen_name'])
                 if tweet.get('in_reply_to_status_id'):
-                    print "In reply to status:", tweet['in_reply_to_status_id']
+                    print("In reply to status:", tweet['in_reply_to_status_id'])
                 if tweet.get('truncated') == True:
-                    print "Tweet was truncated."
-                print "Status:"
+                    print("Tweet was truncated.")
+                print("Status:")
                 print_wrap_to_prefix("  ", tweet_text(tweet))
-                if tweet.has_key('retweeted_status'):
-                    print "Tweet includes a retweet:"
+                if 'retweeted_status' in tweet:
+                    print("Tweet includes a retweet:")
                     display_info(tweet['retweeted_status'])
 
             tweet = tracker.get_tweet_for_key(what)
             if not tweet:
-                print "can't find tweet"
+                print("can't find tweet")
                 return
             display_info(tweet)
 
@@ -192,7 +192,7 @@ def get_commands(twitter, username, tracker, updates):
         def __call__(self, command, what):
             tweet = tracker.get_tweet_for_key(what)
             if not tweet:
-                print "can't find tweet"
+                print("can't find tweet")
                 return
             pprint(tweet)
 
@@ -209,15 +209,16 @@ def get_commands(twitter, username, tracker, updates):
             if count is not None:
                 try: count = int(count)
                 except ValueError:
-                    print "usage: /usertweets <user> [count]"
+                    print("usage: /usertweets <user> [count]")
                     return
                 except TypeError:
-                    print "usage: /usertweets <user> [count]"
+                    print("usage: /usertweets <user> [count]")
                     return
             count = count or 20
             tweets = twitter.statuses.user_timeline(screen_name=screen_name, count=count)
             sort_tweets_by_id(tweets)
-            map(lambda tweet: tracker.add(tweet), tweets)
+            for tweet in tweets:
+                tracker.add(tweet)
             tracker.display_tweets(tweets)
 
     class Thread(Command):
@@ -226,7 +227,7 @@ def get_commands(twitter, username, tracker, updates):
         def __call__(self, command, what):
             tweet = tracker.get_tweet_for_key(what)
             if not tweet:
-                print "can't find tweet"
+                print("can't find tweet")
                 return
             # for each tweet;
             #  -> if it replies, add that tweet to our 'to examine' list
@@ -266,10 +267,10 @@ def get_commands(twitter, username, tracker, updates):
             try:
                 last = int(what)
             except ValueError:
-                print "usage: last <n>"
+                print("usage: last <n>")
                 return
             except TypeError:
-                print "usage: last <n>"
+                print("usage: last <n>")
                 return
             tracker.display_tweets(tracker.get_cached_tweets()[-last:])
 
@@ -284,12 +285,12 @@ def get_commands(twitter, username, tracker, updates):
             try:
                 matcher = re.compile(what)
             except:
-                print "grep: error compiling regular expression"
+                print("grep: error compiling regular expression")
                 return
             def match(tweet):
                 return matcher.search(tweet['user']['screen_name']) or \
                         matcher.search(tweet_text(tweet))
-            matches = filter(match, tracker.get_cached_tweets())
+            matches = list(filter(match, tracker.get_cached_tweets()))
             sort_tweets_by_id(matches)
             tracker.display_tweets(matches)
 
@@ -302,14 +303,14 @@ def get_commands(twitter, username, tracker, updates):
         commands = ['whois']
         def __call__(self, command, what):
             user = twitter.users.show(id=what)
-            print "%s in %s" % (user['name'], user['location'])
-            print "Followers: %8d  Following: %8d" % (user['followers_count'], user['friends_count'])
+            print("%s in %s" % (user['name'], user['location']))
+            print("Followers: %8d  Following: %8d" % (user['followers_count'], user['friends_count']))
             if user['following']:
-                print "You follow %s." % (user['screen_name'])
+                print("You follow %s." % (user['screen_name']))
             else:
-                print "You do not follow %s." % (user['screen_name'])
+                print("You do not follow %s." % (user['screen_name']))
             if user['verified'] == True:
-                print "User is verified."
+                print("User is verified.")
             print_wrap_to_prefix("Description: ", user['description'] or '')
 
     return cmds

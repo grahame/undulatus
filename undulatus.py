@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import readline, sys, os, threading, traceback
 from pprint import pprint
@@ -27,8 +27,8 @@ See the file 'LICENSE' included with this software for more detail.
 
 def obsc():
     # pretty pointless, and IMHO OAuth is broken for standalone, open source applications
-    return map(base64.decodestring,
-            ('aWdpcGRPVXp0dHJWVWF5Sk9kTVpLQQ==', 'Q1U2RHpFNzEwY1NFRGN3WnUzS0NsdEt1V0V0TmNqVVBVc1Zzb25abDVCOA=='))
+    return list(map(base64.decodebytes,
+            (b'aWdpcGRPVXp0dHJWVWF5Sk9kTVpLQQ==', b'Q1U2RHpFNzEwY1NFRGN3WnUzS0NsdEt1V0V0TmNqVVBVc1Zzb25abDVCOA==')))
 
 if __name__ == '__main__':
     splash()
@@ -53,7 +53,7 @@ if __name__ == '__main__':
         oauth_dance(*args)
         oauth_token, oauth_token_secret = read_token_file(filepath)
         os.unlink(filepath)
-        print oauth_token, oauth_token_secret
+        print(oauth_token, oauth_token_secret)
         db.add_tokens(screen_name, oauth_token, oauth_token_secret)
 
     twitter = Twitter(
@@ -81,14 +81,14 @@ if __name__ == '__main__':
                 # timelines, eg. @replies from people we follow
                 printed = set()
                 for timeline in timelines:
-                    recent = filter(lambda tweet: tweet['id'] not in printed,
-                            timeline.update())
-                    map(lambda tweet: printed.add(tweet['id']), recent)
+                    recent = [tweet for tweet in timeline.update() if tweet['id'] not in printed]
+                    for tweet in recent:
+                        printed.add(tweet['id'])
                     tracker.display_tweets(recent)
             try:
                 _update()
             except:
-                print "exception during timeline update"
+                print("exception during timeline update")
                 traceback.print_exc()
             self.go_in(self.update_delay)
 
@@ -114,13 +114,13 @@ if __name__ == '__main__':
                     word += 1
             # command
             if word == 0 and s.startswith('/'):
-                return '', filter(lambda x: x.startswith(s), command_classes.keys())
+                return '', [x for x in list(command_classes.keys()) if x.startswith(s)]
             # word token, complete usernames
             prefix = ''
             if s.startswith('@'):
                 prefix = '@'
                 s = s[1:]
-            return prefix, filter(lambda x: x.startswith(s), tracker.seen_users)
+            return prefix, [x for x in tracker.seen_users if x.startswith(s)]
 
         def complete(self, s, state):
             if s != self.last_s:
@@ -146,10 +146,10 @@ if __name__ == '__main__':
             if ex is not None:
                 try:
                     ex()(cmd[1:], arg)
-                except Exception, e:
+                except Exception as e:
                     if isinstance(e, SystemExit):
                         raise
                     traceback.print_exc()
             else:
-                print "unknown command."
+                print("unknown command.")
 

@@ -7,10 +7,10 @@ def debug(f):
             rv = f(*args, **kwargs)
         except:
             # cover case of things that swallow exceptions above us
-            print >>sys.stderr, "(debug decorator) exception in wrapped function"
+            print("(debug decorator) exception in wrapped function", file=sys.stderr)
             traceback.print_exc()
             raise
-        print >> sys.stderr, "%s(%s, %s) -> %s" % (f.__name__, repr(args), repr(kwargs), repr(rv))
+        print("%s(%s, %s) -> %s" % (f.__name__, repr(args), repr(kwargs), repr(rv)), file=sys.stderr)
         return rv
     return __debug
 
@@ -45,7 +45,7 @@ def pairwise(iterable):
     "s -> (s0,s1), (s1,s2), (s2, s3), ..."
     a, b = itertools.tee(iterable)
     next(b, None)
-    return itertools.izip(a, b)
+    return zip(a, b)
 
 def cmd_and_arg(line):
     cmd = arg = None
@@ -71,7 +71,7 @@ def print_wrap_to_prefix(prefix, text):
         # try and pick characters that fit in our line length with 
         # word splitting
         if outl <= 0:
-            for i in xrange(min((ll, len(text)))):
+            for i in range(min((ll, len(text)))):
                 if text[i] == ' ':
                     outl = i
         # just find the first space
@@ -80,10 +80,10 @@ def print_wrap_to_prefix(prefix, text):
         # or just the whole string
         if outl <= 0:
             outl = len(text)
-        print "%s%s" % (prefix, text[:outl])
+        print("%s%s" % (prefix, text[:outl]))
         prefix = ' ' * len(prefix)
         # strip off spaces we didn't output
-        for i in xrange(outl, len(text)):
+        for i in range(outl, len(text)):
             if text[i] != ' ':
                 break
             outl = i + 1
@@ -93,24 +93,24 @@ def sort_tweets_by_id(tweets):
     tweets.sort(key=lambda a: a['id'])
 
 def eof_help():
-    print "\nuse /quit to quit"
+    print("\nuse /quit to quit")
 
 import readline
 # set up readline on module import
 # seems to be associated with source file
 delims = readline.get_completer_delims()
 # remove / from delims as that is our command char
-delims = ''.join(filter(lambda x: x != '/', delims))
+delims = ''.join([x for x in delims if x != '/'])
 readline.set_completer_delims(delims)
 
 def get_line(prompt, completer):
     # set up completion
     readline.parse_and_bind('tab: complete')
     def c(*args, **kwargs):
-        print args, kwargs
+        print(args, kwargs)
     readline.set_completer(completer)
     try:
-        return raw_input(prompt)
+        return input(prompt)
     except EOFError:
         eof_help()
         return ''
@@ -151,10 +151,10 @@ def get_dbfile(screen_name):
     if not os.access(undulatus_dir, os.R_OK):
         try: os.mkdir(undulatus_dir)
         except:
-            print >>sys.stderr, "unable to make directory `%s'." % undulatus_dir
+            print("unable to make directory `%s'." % undulatus_dir, file=sys.stderr)
             os.exit(1)
     # fix the permissions on it
-    os.chmod(undulatus_dir, 0700)
+    os.chmod(undulatus_dir, 0o700)
     dbfile = os.path.join(undulatus_dir, '%s.db' % screen_name)
     return dbfile
 

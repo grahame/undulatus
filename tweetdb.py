@@ -32,9 +32,9 @@ class Tweet(Base):
                 'in_reply_to_status_id' : str(tweet['in_reply_to_status_id']),
                 'in_reply_to_screen_name' : tweet['in_reply_to_screen_name'],
                 'text' : tweet_text(tweet),
-                'jsonz' : zlib.compress(json.dumps(tweet))
+                'jsonz' : zlib.compress(json.dumps(tweet), encoding='utf8')
                 }
-        if tweet.has_key('retweeted_status'):
+        if 'retweeted_status' in tweet:
             attrs['embedded_retweet_id'] = tweet['retweeted_status']['id']
         return attrs
 
@@ -45,7 +45,8 @@ class Tweet(Base):
             return obj
 
     def get_json(self):
-        return json.loads(zlib.decompress(self.jsonz))
+        s = str(zlib.decompress(self.jsonz), encoding='utf8')
+        return json.loads(s)
 
     # eg. if we've changed DB schema
     def update_from_jsonz(self):
@@ -116,7 +117,7 @@ class DBWrapper(object):
 
             retweet_status_id = None
             # recurse, make the retweet
-            if tweet.has_key('retweeted_status'):
+            if 'retweeted_status' in tweet:
                 retweet_json = tweet['retweeted_status']
                 _make(retweet_json)
 

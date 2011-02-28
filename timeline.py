@@ -18,15 +18,15 @@ class TimelinePlayback(object):
                 options['since_id'] = self.last_id
                 options['count'] = 200
             recent = self.api_method(**options)
-        except Exception, e:
-            print "(traceback playing back timeline)"
+        except Exception as e:
+            print("(traceback playing back timeline)")
             traceback.print_exc()
             return
         recent.reverse()
         # issue tokens
         for update in recent:
             self.tracker.add(update)
-            if update.has_key('retweeted_status'):
+            if 'retweeted_status' in update:
                 self.tracker.add(update['retweeted_status'])
         # update last id
         if len(recent) > 0:

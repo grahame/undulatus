@@ -15,18 +15,19 @@ class TweetTracker(object):
         self.seen_users = set()
         sys.stdout.write("loading recent tweets from database... ")
         sys.stdout.flush()
-        map(self.cache_tweet, reversed(self.db.get_recent(300)))
+        for tweet in self.db.get_recent(300):
+            self.cache_tweet(tweet)
         sys.stdout.write("done! %d tweets loaded.\n" % (len(self.key_to_tweet)))
         sys.stdout.flush()
 
     def get_cached_tweets(self):
-        cache = self.key_to_tweet.values()
+        cache = list(self.key_to_tweet.values())
         sort_tweets_by_id(cache)
         return cache
 
     def make_key(self, i):
         i1 = i % self.base
-        i2 = i / self.base
+        i2 = i // self.base
         return self.tbl[i2] + self.tbl[i1]
 
     def add(self, tweet):
@@ -42,10 +43,10 @@ class TweetTracker(object):
             return tweet
         # else, pull it via the API
         try:
-            print "pull", twitter_id
+            print("pull", twitter_id)
             tweet = self.twitter.statuses.show(id=twitter_id)
-        except Exception, e:
-            print "(traceback getting tweet)"
+        except Exception as e:
+            print("(traceback getting tweet)")
             traceback.print_exc()
             return None
         # add it to the database, cache it
@@ -54,7 +55,8 @@ class TweetTracker(object):
 
     def get_replies_to_tweet(self, tweet):
         replies = self.db.get_replies_to_status_id(tweet['id'])
-        map(self.cache_tweet, replies)
+        for tweet in self.replies:
+            self.cache_tweet(tweet)
         return replies
 
     def cache_tweet(self, tweet):
@@ -92,9 +94,9 @@ class TweetTracker(object):
     def display_tweets(self, tweets):
         if len(tweets) == 0:
             return
-        print
+        print()
         for tweet in tweets:
-            if tweet.has_key('retweeted_status'):
+            if 'retweeted_status' in tweet:
                 self.print_tweet(tweet['retweeted_status'], 
                         " (retweeted by %s)" % (tweet['user']['screen_name']))
             else:
