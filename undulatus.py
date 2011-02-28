@@ -10,7 +10,7 @@ from timeline import TimelinePlayback
 import tweetdb, base64
 
 def splash():
-    print """\
+    print("""\
 Undulatus
 Copyright (C) 2011 Grahame Bowland <grahame@angrygoats.net>
 
@@ -23,7 +23,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
 See the file 'LICENSE' included with this software for more detail.
-"""
+""")
 
 def obsc():
     # pretty pointless, and IMHO OAuth is broken for standalone, open source applications

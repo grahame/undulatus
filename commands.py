@@ -30,12 +30,31 @@ def get_commands(twitter, username, tracker, updates):
     class Block(Command):
         commands = ['block']
         def __call__(self, command, what):
-            twitter.blocks.create(id=what)
+            screen_name = what
+            tweet = tracker.get_tweet_for_key(what)
+            if tweet is not None:
+                screen_name = tweet['user']['screen_name']
+            twitter.blocks.create(id=screen_name)
+
+    class ReportSpam(Command):
+        commands = ['reportspam']
+        def __call__(self, command, what):
+            screen_name = what
+            tweet = tracker.get_tweet_for_key(what)
+            if tweet is not None:
+                screen_name = tweet['user']['screen_name']
+            print "Really report `%s' for spam (and block them)?" % (screen_name)
+            if confirm():
+                twitter.report_spam(id=screen_name)
 
     class Unblock(Command):
         commands = ['unblock']
         def __call__(self, command, what):
-            twitter.blocks.destroy(id=what)
+            screen_name = what
+            tweet = tracker.get_tweet_for_key(what)
+            if tweet is not None:
+                screen_name = tweet['user']['screen_name']
+            twitter.blocks.destroy(id=screen_name)
 
     class BlockExists(Command):
         commands = ['blockexists']
