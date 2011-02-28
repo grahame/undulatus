@@ -27,8 +27,8 @@ See the file 'LICENSE' included with this software for more detail.
 
 def obsc():
     # pretty pointless, and IMHO OAuth is broken for standalone, open source applications
-    return list(map(base64.decodebytes,
-            (b'aWdpcGRPVXp0dHJWVWF5Sk9kTVpLQQ==', b'Q1U2RHpFNzEwY1NFRGN3WnUzS0NsdEt1V0V0TmNqVVBVc1Zzb25abDVCOA==')))
+    return [str(base64.decodebytes(t), encoding='utf8') for t in 
+            (b'aWdpcGRPVXp0dHJWVWF5Sk9kTVpLQQ==', b'Q1U2RHpFNzEwY1NFRGN3WnUzS0NsdEt1V0V0TmNqVVBVc1Zzb25abDVCOA==')]
 
 if __name__ == '__main__':
     splash()
@@ -53,7 +53,6 @@ if __name__ == '__main__':
         oauth_dance(*args)
         oauth_token, oauth_token_secret = read_token_file(filepath)
         os.unlink(filepath)
-        print(oauth_token, oauth_token_secret)
         db.add_tokens(screen_name, oauth_token, oauth_token_secret)
 
     twitter = Twitter(
@@ -134,22 +133,22 @@ if __name__ == '__main__':
     smart_complete = SmartCompletion()
 
     while True:
-            line = get_line("%s >> " % screen_name, smart_complete.complete)
-            cmd = None
-            arg = None
-            if line.startswith('/'):
-                cmd, arg = cmd_and_arg(line)
-            else:
-                cmd = '/say'
-                arg = line.rstrip()
-            ex = command_classes.get(cmd, None)
-            if ex is not None:
-                try:
-                    ex()(cmd[1:], arg)
-                except Exception as e:
-                    if isinstance(e, SystemExit):
-                        raise
-                    traceback.print_exc()
-            else:
-                print("unknown command.")
+        line = get_line("%s> " % screen_name, smart_complete.complete)
+        cmd = None
+        arg = None
+        if line.startswith('/'):
+            cmd, arg = cmd_and_arg(line)
+        else:
+            cmd = '/say'
+            arg = line.rstrip()
+        ex = command_classes.get(cmd, None)
+        if ex is not None:
+            try:
+                ex()(cmd[1:], arg)
+            except Exception as e:
+                if isinstance(e, SystemExit):
+                    raise
+                traceback.print_exc()
+        else:
+            print("unknown command.")
 

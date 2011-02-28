@@ -32,7 +32,7 @@ class Tweet(Base):
                 'in_reply_to_status_id' : str(tweet['in_reply_to_status_id']),
                 'in_reply_to_screen_name' : tweet['in_reply_to_screen_name'],
                 'text' : tweet_text(tweet),
-                'jsonz' : zlib.compress(json.dumps(tweet), encoding='utf8')
+                'jsonz' : zlib.compress(bytes(json.dumps(tweet), encoding='utf8'))
                 }
         if 'retweeted_status' in tweet:
             attrs['embedded_retweet_id'] = tweet['retweeted_status']['id']
