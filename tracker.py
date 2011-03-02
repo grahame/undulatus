@@ -2,17 +2,22 @@
 from tweetdb import Tweet, DBWrapper
 from util import *
 import traceback, sys
+import threading
 
-class TweetTracker(object):
+class TweetTracker(threading.Thread):
+    tbl = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+
     def __init__(self, twitter, db):
         self.twitter = twitter
         self.db = db
         self.last_id = 0
-        self.tbl = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
         self.base = len(self.tbl)
         self.key_to_tweet = {}
         self.twitter_to_key = {}
         self.seen_users = set()
+        self.load_recent()
+
+    def load_recent(self):
         sys.stdout.write("loading recent tweets from database... ")
         sys.stdout.flush()
         for tweet in self.db.get_recent(300):

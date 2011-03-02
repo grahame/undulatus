@@ -16,3 +16,12 @@ twitter account.
 Then just launch undulatus:
 ./undulatus.py
 
+Threading
+
+               call buffer
+	          |
+  [ network thread -> makes api requests ]
+                  |
+              output buffer
+	          |
+  [ database thread -> prints to stdout ]
