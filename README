@@ -3,10 +3,14 @@ python twitter tools package.
 
 See the file 'LICENSE' for licensing and copyright information.
 
-You'll need to have ptt installed:
-http://mike.verdone.ca/twitter/
+You'll need:
+  Python 3.1
 
-You'll also need sqlalchemy 0.6 installed.
+  PTT (ported by me to Python 3):
+  https://github.com/grahame/twitter/tree/python3
+  
+  SqlAlchemy 0.6 (available in Debian as python3-sqlalchemy)
+
 All tweets are stored in an SQL database for archival / future analysis.
 
 Things are pretty rough right now. Make sure you use the 'twitter' 
@@ -16,7 +20,10 @@ twitter account.
 Then just launch undulatus:
 ./undulatus.py
 
-Threading
+Dev notes
+---------
+
+Threading model should eventually look like:
 
                call buffer
 	          |
