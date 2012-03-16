@@ -35,6 +35,7 @@ if __name__ == '__main__':
 
     from twitter.oauth import OAuth, write_token_file, read_token_file
     from twitter.api import Twitter, TwitterError
+    from twitter.api import TwitterHTTPError
 
     from optparse import OptionParser
     parser = OptionParser()
@@ -80,12 +81,19 @@ if __name__ == '__main__':
                 # timelines, eg. @replies from people we follow
                 printed = set()
                 for timeline in timelines:
-                    recent = [tweet for tweet in timeline.update() if tweet['id'] not in printed]
+                    update = timeline.update()
+                    if update is None:
+                        print("timeline update failed: %s" % repr(timeline))
+                        continue
+                    recent = [tweet for tweet in update if tweet['id'] not in printed]
                     for tweet in recent:
                         printed.add(tweet['id'])
                     tracker.display_tweets(recent)
             try:
                 _update()
+            except TwitterHTTPError as e:
+                print("(twitter API error: %s)" % e)
+                return
             except:
                 print("exception during timeline update")
                 traceback.print_exc()

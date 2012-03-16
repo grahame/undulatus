@@ -1,6 +1,7 @@
 
 from tweetdb import Tweet, DBWrapper
 from util import *
+from twitter.api import TwitterHTTPError
 import traceback, sys
 import threading
 
@@ -18,6 +19,7 @@ class TweetTracker(threading.Thread):
         self.load_recent()
 
     def load_recent(self):
+        return
         sys.stdout.write("loading recent tweets from database... ")
         sys.stdout.flush()
         for tweet in self.db.get_recent(300):
@@ -50,6 +52,9 @@ class TweetTracker(threading.Thread):
         try:
             print("pull", twitter_id)
             tweet = self.twitter.statuses.show(id=twitter_id)
+        except TwitterHTTPError as e:
+            print("(twitter API error: %s)" % e)
+            return None
         except Exception as e:
             print("(traceback getting tweet)")
             traceback.print_exc()

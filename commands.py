@@ -2,6 +2,49 @@
 import sys, re
 from util import *
 
+class Threader(object):
+    def __init__(self, tracker):
+        self.tracker = tracker
+        self.thread = []
+        self.thread_ids = set()
+        self.examine = [ ]
+
+    def append_to_thread(self, tweet):
+        self.thread_ids.add(tweet['id'])
+        self.thread.append(tweet)
+
+    def process(self, tweet):
+        # for each tweet;
+        #  -> if it replies, add that tweet to our 'to examine' list
+        #  -> find the tweets that reply to it. add the to our 'to 
+        #     examine' list (after this tweet)
+        #  -> sort by twitter ID
+        if tweet['id'] not in self.thread_ids:
+            self.examine.append(tweet)
+
+        while len(self.examine) > 0:
+            this_pass = list(self.examine)
+            self.examine = []
+            for tweet in this_pass:
+                self.append_to_thread(tweet)
+                # whatever this tweet replied to
+                in_reply_to = tweet['in_reply_to_status_id']
+                if in_reply_to is not None:
+                    reply = self.tracker.get_tweet_for_id(in_reply_to)
+                    if reply is None:
+                        print("(tweet in thread deleted or protected: %d)" % in_reply_to)
+                    elif reply['id'] not in self.thread_ids:
+                        self.examine.append(reply)
+                # whatever tweets replied to this tweet
+                for reply in self.tracker.get_replies_to_tweet(tweet):
+                    if reply['id'] not in self.thread_ids:
+                        self.examine.append(reply)
+
+    def get(self):
+        sort_tweets_by_id(self.thread)
+        return self.thread
+
+
 def get_commands(twitter, username, tracker, updates):
 
     cmds = {}
@@ -154,6 +197,9 @@ def get_commands(twitter, username, tracker, updates):
             # ignore null tweet attempts
             if what == '':
                 return
+            if len(what) > 140:
+                print("can't send tweet, too long at %d characters." % len(what))
+                return
             print_wrap_to_prefix("send tweet ", what)
             if confirm():
                 update = {}
@@ -229,37 +275,9 @@ def get_commands(twitter, username, tracker, updates):
             if not tweet:
                 print("can't find tweet")
                 return
-            # for each tweet;
-            #  -> if it replies, add that tweet to our 'to examine' list
-            #  -> find the tweets that reply to it. add the to our 'to 
-            #     examine' list (after this tweet)
-            #  -> sort by twitter ID
-
-            thread = []
-            thread_ids = set()
-            examine = [ tweet ]
-
-            def append_to_thread(tweet):
-                thread_ids.add(tweet['id'])
-                thread.append(tweet)
-
-            while len(examine) > 0:
-                this_pass = list(examine)
-                examine = []
-                for tweet in this_pass:
-                    append_to_thread(tweet)
-                    # whatever this tweet replied to
-                    in_reply_to = tweet['in_reply_to_status_id']
-                    if in_reply_to is not None:
-                        reply = tracker.get_tweet_for_id(in_reply_to)
-                        if reply['id'] not in thread_ids:
-                            examine.append(reply)
-                    # whatever tweets replied to this tweet
-                    for reply in tracker.get_replies_to_tweet(tweet):
-                        if reply['id'] not in thread_ids:
-                            examine.append(reply)
-            sort_tweets_by_id(thread)
-            tracker.display_tweets(thread)
+            threader = Threader(tracker)
+            threader.process(tweet)
+            tracker.display_tweets(threader.get())
 
     class Last(Command):
         commands = ['last']
@@ -280,19 +298,26 @@ def get_commands(twitter, username, tracker, updates):
             Last()(command, '10')
 
     class Grep(Command):
-        commands = ['grep']
+        commands = ['grep', 'tgrep']
         def __call__(self, command, what):
             try:
-                matcher = re.compile(what)
+                matcher = re.compile(what, re.IGNORECASE | re.UNICODE)
             except:
                 print("grep: error compiling regular expression")
                 return
             def match(tweet):
                 return matcher.search(tweet['user']['screen_name']) or \
                         matcher.search(tweet_text(tweet))
-            matches = list(filter(match, tracker.get_cached_tweets()))
-            sort_tweets_by_id(matches)
-            tracker.display_tweets(matches)
+            if command == 'grep':
+                matches = list(filter(match, tracker.get_cached_tweets()))
+                sort_tweets_by_id(matches)
+                tracker.display_tweets(matches)
+            elif command == 'tgrep':
+                threader = Threader(tracker)
+                matches = list(filter(match, tracker.get_cached_tweets()))
+                for match in matches:
+                    threader.process(match)
+                tracker.display_tweets(threader.get())
 
     class UnFavourite(Command):
         commands = ['unfave']
@@ -303,6 +328,7 @@ def get_commands(twitter, username, tracker, updates):
         commands = ['whois']
         def __call__(self, command, what):
             user = twitter.users.show(id=what)
+            print(user)
             print("%s in %s" % (user['name'], user['location']))
             print("Followers: %8d  Following: %8d" % (user['followers_count'], user['friends_count']))
             if user['following']:

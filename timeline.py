@@ -1,5 +1,6 @@
 
 import traceback
+from twitter.api import TwitterHTTPError
 
 class TimelinePlayback(object):
     def __init__(self, tracker, api_method, api_options, initial_count = 20):
@@ -18,6 +19,9 @@ class TimelinePlayback(object):
                 options['since_id'] = self.last_id
                 options['count'] = 200
             recent = self.api_method(**options)
+        except TwitterHTTPError as e:
+            print("(twitter API error: %s)" % e)
+            return
         except Exception as e:
             print("(traceback playing back timeline)")
             traceback.print_exc()
