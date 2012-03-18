@@ -28,7 +28,7 @@ class Threader(object):
             for tweet in this_pass:
                 self.append_to_thread(tweet)
                 # whatever this tweet replied to
-                in_reply_to = tweet['in_reply_to_status_id']
+                in_reply_to = tweet['in_reply_to_status_id_str']
                 if in_reply_to is not None:
                     reply = self.tracker.get_tweet_for_id(in_reply_to)
                     if reply is None:
@@ -204,7 +204,7 @@ def get_commands(twitter, username, tracker, updates):
             if confirm():
                 update = {}
                 if in_reply_to is not None:
-                    update['in_reply_to_status_id'] = in_reply_to
+                    update['in_reply_to_status_id_str'] = in_reply_to
                 update['status'] = what
                 twitter.statuses.update(**update)
 
@@ -217,8 +217,8 @@ def get_commands(twitter, username, tracker, updates):
                 print("User: `%s' / `%s' in `%s'" % (user['screen_name'], user['name'], user['location']))
                 if tweet.get('in_reply_to_screen_name'):
                     print("In reply to user:", tweet['in_reply_to_screen_name'])
-                if tweet.get('in_reply_to_status_id'):
-                    print("In reply to status:", tweet['in_reply_to_status_id'])
+                if tweet.get('in_reply_to_status_id_str'):
+                    print("In reply to status:", tweet['in_reply_to_status_id_str'])
                 if tweet.get('truncated') == True:
                     print("Tweet was truncated.")
                 print("Status:")
