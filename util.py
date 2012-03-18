@@ -145,16 +145,3 @@ def uniq_usernames(usernames):
         rv.append(username)
     return rv
 
-def get_dbfile(screen_name):
-    undulatus_dir = os.path.expanduser('~/.undulatus')
-    # make the dir if it's not there
-    if not os.access(undulatus_dir, os.R_OK):
-        try: os.mkdir(undulatus_dir)
-        except:
-            print("unable to make directory `%s'." % undulatus_dir, file=sys.stderr)
-            os.exit(1)
-    # fix the permissions on it
-    os.chmod(undulatus_dir, 0o700)
-    dbfile = os.path.join(undulatus_dir, '%s.db' % screen_name)
-    return dbfile
-

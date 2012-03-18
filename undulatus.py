@@ -7,6 +7,7 @@ if __name__ == '__main__':
         import sys, os
         path = os.path.dirname(os.path.join(os.getcwd(), sys.argv[0]))
         sys.path.insert(0, os.path.join(path, 'twitter'))
+        sys.path.insert(0, os.path.join(path, 'couchdb-python3'))
 
     def splash():
         print("""\
@@ -41,15 +42,22 @@ if __name__ == '__main__':
         parser = OptionParser()
         (options, args) = parser.parse_args()
         screen_name = args[0]
+        srvuri = 'http://localhost:5984'
+        dbname = screen_name.lower()
+        if len(args) >= 2:
+            srvuri = args[1]
+        if len(args) >= 3:
+            dbname = args[2]
+
+        print(screen_name, srvuri, dbname)
 
         def obsc():
             # pretty pointless, and IMHO OAuth is broken for standalone, open source applications
             return [str(base64.decodebytes(t), encoding='utf8') for t in 
                     (b'aWdpcGRPVXp0dHJWVWF5Sk9kTVpLQQ==', b'Q1U2RHpFNzEwY1NFRGN3WnUzS0NsdEt1V0V0TmNqVVBVc1Zzb25abDVCOA==')]
 
-        dbfile = get_dbfile(screen_name)
-        db = tweetdb.DBWrapper(dbfile)
-        oauth_token, oauth_token_secret = db.tokens_for_screen_name(screen_name)
+        db = tweetdb.DBWrapper(screen_name, srvuri, dbname)
+        oauth_token, oauth_token_secret = db.tokens()
 
         if oauth_token is None:
             from twitter.oauth_dance import oauth_dance
@@ -59,7 +67,7 @@ if __name__ == '__main__':
             oauth_dance(*args)
             oauth_token, oauth_token_secret = read_token_file(filepath)
             os.unlink(filepath)
-            db.add_tokens(screen_name, oauth_token, oauth_token_secret)
+            db.add_tokens(oauth_token, oauth_token_secret)
 
         twitter = Twitter(
             auth=OAuth(

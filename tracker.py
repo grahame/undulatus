@@ -1,5 +1,5 @@
 
-from tweetdb import Tweet, DBWrapper
+from tweetdb import DBWrapper
 from util import *
 from twitter.api import TwitterHTTPError
 import traceback, sys

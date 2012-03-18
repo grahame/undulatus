@@ -1,3 +1,6 @@
 [submodule "twitter"]
 	path = twitter
 	url = https://github.com/sixohsix/twitter.git
+[submodule "couchdb-python3"]
+	path = couchdb-python3
+	url = https://github.com/lilydjwg/couchdb-python3
