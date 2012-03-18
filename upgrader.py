@@ -26,8 +26,8 @@ class Tweet(Base):
     @classmethod
     def _json_to_attrs(cls, tweet):
         attrs = {
-                'status_id' : str(tweet['id']),
-                'user_id' : str(tweet['user']['id']),
+                'status_id' : str(tweet['id_str']),
+                'user_id' : str(tweet['user']['id_str']),
                 'screen_name' : tweet['user']['screen_name'],
                 'in_reply_to_status_id' : str(tweet['in_reply_to_status_id']),
                 'in_reply_to_screen_name' : tweet['in_reply_to_screen_name'],
@@ -35,7 +35,7 @@ class Tweet(Base):
                 'jsonz' : zlib.compress(bytes(json.dumps(tweet), encoding='utf8'))
                 }
         if 'retweeted_status' in tweet:
-            attrs['embedded_retweet_id'] = tweet['retweeted_status']['id']
+            attrs['embedded_retweet_id'] = tweet['retweeted_status']['id_str']
         return attrs
 
     @classmethod
@@ -83,7 +83,7 @@ if __name__ == '__main__':
     sz = 400
     for tweet in Session().query(Tweet).yield_per(sz):
         obj = tweet.get_json()
-        obj['_id'] = str(obj['id'])
+        obj['_id'] = str(obj['id_str'])
         buf.append(obj)
         if len(buf) == sz:
             sys.stderr.write('.')

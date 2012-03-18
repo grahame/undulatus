@@ -55,7 +55,7 @@ class DBWrapper(object):
                 session.query(Tweet).order_by(desc(big_status))[:n]]
 
     def make(self, tweet):
-        doc = self.get_by_status_id(tweet['id'])
+        doc = self.get_by_status_id(tweet['id_str'])
         if doc is None:
-            self.db[str(tweet['id'])] = tweet
+            self.db[str(tweet['id_str'])] = tweet
 
