@@ -66,12 +66,16 @@ if __name__ == '__main__':
     engine = create_engine('sqlite:///%s' % sys.argv[1], echo=False)
     from sqlalchemy.orm import sessionmaker
     import couchdb
+    l = input('this upgrader is destructive to any tweets in couchdb. are you sure? ')
+    if l != 'yes':
+        sys.exit(1)
     Session = sessionmaker(bind=engine)
     srv = couchdb.Server()
     try:
-        srv.create(sys.argv[2])
-    except couchdb.http.PreconditionFailed:
+        del srv[sys.argv[2]]
+    except couchdb.http.ResourceNotFound:
         pass
+    srv.create(sys.argv[2])
     db = couchdb.Database(sys.argv[2])
     try:
         del db['oauth_tokens']
@@ -79,10 +83,15 @@ if __name__ == '__main__':
         pass
     for toks in Session().query(OAuthTokens).yield_per(1):
         db['oauth_tokens'] = { 'token' : toks.oauth_token, 'secret' : toks.oauth_token_secret }
-    for tweet in Session().query(Tweet).yield_per(1):
+    buf = []
+    sz = 400
+    for tweet in Session().query(Tweet).yield_per(sz):
         obj = tweet.get_json()
-        try:
-            db[str(obj['id'])] = obj
-        except couchdb.http.ResourceConflict:
-            pass
+        obj['_id'] = str(obj['id'])
+        buf.append(obj)
+        if len(buf) == sz:
+            sys.stderr.write('.')
+            sys.stderr.flush()
+            db.update(buf)
+            buf = []
 
