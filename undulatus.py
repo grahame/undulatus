@@ -4,12 +4,6 @@ from util import *
 
 if __name__ == '__main__':
     import sys, os
-    app_path = os.path.dirname(os.path.join(os.getcwd(), sys.argv[0]))
-
-    def setup_env():
-        sys.path.insert(0, os.path.join(app_path, 'twitter'))
-        sys.path.insert(0, os.path.join(app_path, 'couchdb-python3'))
-
     def splash():
         print("""\
 Undulatus

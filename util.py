@@ -1,6 +1,12 @@
 
 import re, os, sys, traceback, itertools, time, calendar
 
+app_path = os.path.dirname(os.path.join(os.getcwd(), sys.argv[0]))
+
+def setup_env():
+    sys.path.insert(0, os.path.join(app_path, 'twitter'))
+    sys.path.insert(0, os.path.join(app_path, 'couchdb-python3'))
+
 def debug(f):
     def __debug(*args, **kwargs):
         try:
