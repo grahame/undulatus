@@ -3,26 +3,27 @@
 from util import *
 
 if __name__ == '__main__':
+    import sys, os
+    app_path = os.path.dirname(os.path.join(os.getcwd(), sys.argv[0]))
+
     def setup_env():
-        import sys, os
-        path = os.path.dirname(os.path.join(os.getcwd(), sys.argv[0]))
-        sys.path.insert(0, os.path.join(path, 'twitter'))
-        sys.path.insert(0, os.path.join(path, 'couchdb-python3'))
+        sys.path.insert(0, os.path.join(app_path, 'twitter'))
+        sys.path.insert(0, os.path.join(app_path, 'couchdb-python3'))
 
     def splash():
         print("""\
-    Undulatus
-    Copyright (C) 2011 Grahame Bowland <grahame@angrygoats.net>
+Undulatus
+Copyright (C) 2011 Grahame Bowland <grahame@angrygoats.net>
 
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-    THE SOFTWARE.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
 
-    See the file 'LICENSE' included with this software for more detail.
+See the file 'LICENSE' included with this software for more detail.
     """)
 
     def main():
@@ -56,7 +57,7 @@ if __name__ == '__main__':
             return [str(base64.decodebytes(t), encoding='utf8') for t in 
                     (b'aWdpcGRPVXp0dHJWVWF5Sk9kTVpLQQ==', b'Q1U2RHpFNzEwY1NFRGN3WnUzS0NsdEt1V0V0TmNqVVBVc1Zzb25abDVCOA==')]
 
-        db = tweetdb.DBWrapper(screen_name, srvuri, dbname)
+        db = tweetdb.DBWrapper(app_path, screen_name, srvuri, dbname)
         oauth_token, oauth_token_secret = db.tokens()
 
         if oauth_token is None:
