@@ -44,8 +44,6 @@ See the file 'LICENSE' included with this software for more detail.
         if len(args) >= 3:
             dbname = args[2]
 
-        print(screen_name, srvuri, dbname)
-
         def obsc():
             # pretty pointless, and IMHO OAuth is broken for standalone, open source applications
             return [str(base64.decodebytes(t), encoding='utf8') for t in 
