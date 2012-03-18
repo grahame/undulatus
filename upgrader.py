@@ -66,16 +66,12 @@ if __name__ == '__main__':
     engine = create_engine('sqlite:///%s' % sys.argv[1], echo=False)
     from sqlalchemy.orm import sessionmaker
     import couchdb
-    l = input('this upgrader is destructive to any tweets in couchdb. are you sure? ')
-    if l != 'yes':
-        sys.exit(1)
     Session = sessionmaker(bind=engine)
     srv = couchdb.Server()
     try:
-        del srv[sys.argv[2]]
-    except couchdb.http.ResourceNotFound:
+        srv.create(sys.argv[2])
+    except couchdb.http.PreconditionFailed:
         pass
-    srv.create(sys.argv[2])
     db = couchdb.Database(sys.argv[2])
     try:
         del db['oauth_tokens']

@@ -66,7 +66,6 @@ class TweetTracker(threading.Thread):
     def get_replies_to_tweet(self, tweet):
         replies = self.db.get_replies_to_status_id(tweet['id'])
         for tweet in replies:
-            print(tweet)
             self.cache_tweet(tweet)
         return replies
 
