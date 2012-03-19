@@ -12,10 +12,10 @@ You'll need:
 
 To get going;
 
-1.  B'git submodule init'; 'git submodule update'
+1.  'git submodule init'; 'git submodule update'  
     this will grab the python twitter tools, and couchdb wrappers
 2.  install couchdb on localhost
-3.  start undulatus:
+3.  start undulatus:  
     `./undulatus.py screenname`
 4.  .. it ought to just work.
 
