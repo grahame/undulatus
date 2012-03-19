@@ -3,6 +3,18 @@ import re, os, sys, traceback, itertools, time, calendar, datetime
 
 app_path = os.path.dirname(os.path.join(os.getcwd(), sys.argv[0]))
 
+class TracebackHolder:
+    def __init__(self):
+        self.tb = None
+
+    def set(self, s):
+        self.tb = s
+
+    def get(self):
+        return self.tb
+
+last_tb = TracebackHolder()
+
 def setup_env():
     sys.path.insert(0, os.path.join(app_path, 'twitter'))
     sys.path.insert(0, os.path.join(app_path, 'couchdb-python3'))

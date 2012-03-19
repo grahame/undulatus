@@ -102,7 +102,7 @@ See the file 'LICENSE' included with this software for more detail.
                     return
                 except:
                     print("exception during timeline update")
-                    traceback.print_exc()
+                    last_tb.set(traceback.format_exc())
                 self.go_in(self.update_delay)
 
             def go_in(self, secs):

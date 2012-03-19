@@ -55,8 +55,8 @@ class TweetTracker(threading.Thread):
             print("(twitter API error: %s)" % e)
             return None
         except Exception as e:
-            print("(traceback getting tweet)")
-            traceback.print_exc()
+            print("(traceback getting tweet - /traceback to retrieve)")
+            last_tb.set(traceback.format_exc())
             return None
         # add it to the database, cache it
         self.add(tweet)

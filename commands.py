@@ -66,6 +66,15 @@ def get_commands(twitter, username, tracker, updates):
         def __call__(self, command, what):
             updates.go_in(0)
 
+    class Traceback(Command):
+        commands = ['traceback']
+        def __call__(self, command, what):
+            tb = last_tb.get()
+            if tb is None:
+                print("No traceback has occurred since undulatus was launched.")
+            else:
+                print("Traceback follows:\n%s\n", tb)
+
     class Quit(Command):
         commands = ['quit']
         def __call__(self, command, what):
