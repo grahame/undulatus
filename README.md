@@ -5,6 +5,7 @@ python twitter tools package.
 See the file 'LICENSE' for licensing and copyright information.
 
 You'll need:
+
 *  Python 3.1
 *  CouchDB
 *  Git
