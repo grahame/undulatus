@@ -1,6 +1,7 @@
 
 import sys, re
 from util import *
+from pprint import pprint
 
 class Threader(object):
     def __init__(self, tracker):
@@ -200,7 +201,10 @@ def get_commands(twitter, username, tracker, updates):
             if len(what) > 140:
                 print("can't send tweet, too long at %d characters." % len(what))
                 return
-            print_wrap_to_prefix("send tweet ", what)
+            if what.startswith('d '):
+                print_wrap_to_prefix("send dm ", what)
+            else:
+                print_wrap_to_prefix("send tweet ", what)
             if confirm():
                 update = {}
                 if in_reply_to is not None:
@@ -328,7 +332,7 @@ def get_commands(twitter, username, tracker, updates):
         commands = ['whois']
         def __call__(self, command, what):
             user = twitter.users.show(id=what)
-            print(user)
+            pprint(user)
             print("%s in %s" % (user['name'], user['location']))
             print("Followers: %8d  Following: %8d" % (user['followers_count'], user['friends_count']))
             if user['following']:
