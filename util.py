@@ -1,5 +1,5 @@
 
-import re, os, sys, traceback, itertools, time, calendar
+import re, os, sys, traceback, itertools, time, calendar, datetime
 
 app_path = os.path.dirname(os.path.join(os.getcwd(), sys.argv[0]))
 
@@ -30,6 +30,9 @@ def tweet_text(tweet):
 
 def tweet_unixtime(tweet):
     return calendar.timegm(time.strptime(tweet['created_at'], '%a %b %d %H:%M:%S +0000 %Y'))
+
+def tweet_datetime(tweet):
+    return datetime.datetime.strptime(tweet['created_at'], '%a %b %d %H:%M:%S +0000 %Y')
 
 def tweet_ago(tweet):
     ago = time.time() - tweet_unixtime(tweet)
