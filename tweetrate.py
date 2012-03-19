@@ -37,6 +37,6 @@ if __name__ == '__main__':
     ax = fig.add_subplot(111)
     ax.plot_date(x, y, fmt='-')
     ax.set_title("Tweet rate", fontsize=14)
-    ax.set_ylabel("followers")
+    ax.set_ylabel("daily tweets")
     fig.savefig(args.o, format="png", bbox_inches='tight')
 
