@@ -32,7 +32,7 @@ class Threader(object):
                 if in_reply_to is not None:
                     reply = self.tracker.get_tweet_for_id(in_reply_to)
                     if reply is None:
-                        print("(tweet in thread deleted or protected: %d)" % in_reply_to)
+                        print("(tweet in thread deleted or protected: %s)" % in_reply_to)
                     elif reply['id'] not in self.thread_ids:
                         self.examine.append(reply)
                 # whatever tweets replied to this tweet
