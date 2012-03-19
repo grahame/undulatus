@@ -35,8 +35,11 @@ if __name__ == '__main__':
     ax = fig.add_subplot(111)
     for user, x, y in get_lines():
         ax.plot_date(x, y, label=user, fmt='-')
-    ax.legend(loc=4)
-    ax.set_title("Twitter followers", size=14)
+    ax.legend(loc="upper left")
+    ax.set_title("Twitter followers", fontsize=14)
     ax.set_ylabel("followers")
+    leg = plt.gca().get_legend()
+    ltext = leg.get_texts()
+    plt.setp(ltext, fontsize='6')
     fig.savefig(args.o, format="png", bbox_inches='tight')
 
