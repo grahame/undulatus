@@ -45,7 +45,7 @@ class DBWrapper(object):
             return None
 
     def get_replies_to_status_id(self, status_id):
-        return map(lambda row: self.get_by_status_id(row.id), self.db.view('undulatus/replies')[status_id])
+        return list(map(lambda row: self.get_by_status_id(row.id), self.db.view('undulatus/replies')[status_id]))
 
     # will probably break when twitter hits 63 bit status IDs..
     def get_recent(self, n):
