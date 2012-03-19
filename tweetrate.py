@@ -20,12 +20,13 @@ if __name__ == '__main__':
     today = None
     count = 0
     for tweet in ( db.get_by_status_id(row.id) for row in db.db.view('undulatus/byid')):
-        try: ut = tweet_datetime(tweet)
+        try: ut = tweet_datetime(tweet).date()
         except KeyError: continue
-        if ut.date() != today:
+        if ut != today:
             if today:
                 x.append(today)
                 y.append(count)
+            today = ut
             count = 0
         count += 1
 
