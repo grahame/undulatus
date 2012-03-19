@@ -33,9 +33,10 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
     fig = plt.figure(figsize=(16,9), dpi=72)
     ax = fig.add_subplot(111)
-    fig.suptitle("Twitter followers", size=14)
     for user, x, y in get_lines():
         ax.plot_date(x, y, label=user, fmt='-')
     ax.legend(loc=4)
+    ax.set_title("Twitter followers", size=14)
+    ax.set_ylabel("followers")
     fig.savefig(args.o, format="png", bbox_inches='tight')
 
