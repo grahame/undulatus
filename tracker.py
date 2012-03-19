@@ -19,7 +19,6 @@ class TweetTracker(threading.Thread):
         self.load_recent()
 
     def load_recent(self):
-        return
         sys.stdout.write("loading recent tweets from database... ")
         sys.stdout.flush()
         for tweet in self.db.get_recent(300):
