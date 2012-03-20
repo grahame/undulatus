@@ -37,6 +37,8 @@ class TweetTracker(threading.Thread):
         return self.tbl[i2] + self.tbl[i1]
 
     def add(self, tweet):
+        if 'retweeted_status' in tweet:
+            self.add(tweet['retweeted_status'])
         # look up our database object (or make it)
         self.db.make(tweet)
         self.cache_tweet(tweet)

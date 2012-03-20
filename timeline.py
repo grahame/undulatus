@@ -31,8 +31,6 @@ class TimelinePlayback(object):
         # issue tokens
         for update in recent:
             self.tracker.add(update)
-            if 'retweeted_status' in update:
-                self.tracker.add(update['retweeted_status'])
         # update last id
         if len(recent) > 0:
             self.last_id = recent[-1]['id']
