@@ -199,7 +199,7 @@ def get_commands(twitter, username, tracker, updates):
             usernames = uniq_usernames(
                     [u for u in usernames if u != username])
             arg = "%s %s" % (' '.join("@" + u for u in usernames), arg)
-            Say()(command, arg, in_reply_to=tweet['id'])
+            Say()(command, arg, in_reply_to=int(tweet['id_str']))
 
     class Say(Command):
         commands = ['say']
@@ -217,7 +217,7 @@ def get_commands(twitter, username, tracker, updates):
             if confirm():
                 update = {}
                 if in_reply_to is not None:
-                    update['in_reply_to_status_id_str'] = in_reply_to
+                    update['in_reply_to_status_id'] = in_reply_to
                 update['status'] = what
                 twitter.statuses.update(**update)
 
