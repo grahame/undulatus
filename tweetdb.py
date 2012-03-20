@@ -43,6 +43,7 @@ class DBWrapper(object):
         doc['configuration'] = new_config
         doc['updated'] = now_tweettime()
         self.db['help_configuration'] = doc
+        return doc
 
     def tokens(self):
         try:

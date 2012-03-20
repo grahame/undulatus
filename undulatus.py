@@ -73,7 +73,7 @@ See the file 'LICENSE' included with this software for more detail.
         if configuration is None or (datetime.datetime.now() - datetime_strptime(configuration['updated'])).days > 1:
             print("retrieving twitter configuration.")
             new_config = twitter.help.configuration()
-            db.save_configuration(new_config)
+            configuration = db.save_configuration(new_config)
 
         tracker = TweetTracker(twitter, db)
         timelines = [
