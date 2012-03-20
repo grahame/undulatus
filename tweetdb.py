@@ -66,7 +66,9 @@ class DBWrapper(object):
 
     # will probably break when twitter hits 63 bit status IDs..
     def get_recent(self, n):
-        return [ self.get_by_status_id(row.id) for row in self.db.view('undulatus/byid', limit=n, descending=True) ]
+        rv = [ self.get_by_status_id(row.id) for row in self.db.view('undulatus/byid', limit=n, descending=True) ]
+        rv.reverse()
+        return rv
 
     def make(self, tweet):
         doc = self.get_by_status_id(tweet['id_str'])
