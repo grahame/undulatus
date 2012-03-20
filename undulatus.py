@@ -69,6 +69,12 @@ See the file 'LICENSE' included with this software for more detail.
             api_version='1',
             domain='api.twitter.com')
 
+        configuration = db.configuration()
+        if configuration is None or (datetime.datetime.now() - datetime_strptime(configuration['updated'])).days > 1:
+            print("retrieving twitter configuration.")
+            new_config = twitter.help.configuration()
+            db.save_configuration(new_config)
+
         tracker = TweetTracker(twitter, db)
         timelines = [
                 TimelinePlayback(tracker, twitter.statuses.friends_timeline,
@@ -113,7 +119,7 @@ See the file 'LICENSE' included with this software for more detail.
                 self.thread.start()
 
         updates = TimelineUpdates()
-        command_classes = get_commands(twitter, screen_name, tracker, updates)
+        command_classes = get_commands(twitter, screen_name, tracker, updates, configuration['configuration'])
 
         class SmartCompletion(object):
             def __init__(self):

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import zlib, json, os
-from util import tweet_text
+from util import tweet_text, now_tweettime
 import couchdb
 
 class DBWrapper(object):
@@ -27,6 +27,22 @@ class DBWrapper(object):
                 self.db['_design/undulatus'] = js
         except couchdb.http.ResourceNotFound:
             self.db['_design/undulatus'] = js
+
+    def configuration(self):
+        try:
+            doc = self.db['help_configuration']
+            return doc
+        except couchdb.http.ResourceNotFound:
+            return None
+
+    def save_configuration(self, new_config):
+        try:
+            doc = self.db['help_configuration']
+        except couchdb.http.ResourceNotFound:
+            doc = {}
+        doc['configuration'] = new_config
+        doc['updated'] = now_tweettime()
+        self.db['help_configuration'] = doc
 
     def tokens(self):
         try:

@@ -48,8 +48,7 @@ class Threader(object):
         return self.thread
 
 
-def get_commands(twitter, username, tracker, updates):
-
+def get_commands(twitter, username, tracker, updates, configuration):
     cmds = {}
 
     class CommandMeta(type):
@@ -209,7 +208,7 @@ def get_commands(twitter, username, tracker, updates):
             # ignore null tweet attempts
             if what == '':
                 return
-            if len(what) > 140:
+            if estimate_tweet_length(what, configuration['short_url_length']) > 140:
                 print("can't send tweet, too long at %d characters." % len(what))
                 return
             if what.startswith('d '):

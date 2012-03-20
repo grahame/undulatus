@@ -41,11 +41,29 @@ def tweet_text(tweet):
     from twitter.util import htmlentitydecode
     return htmlentitydecode(tweet['text'])
 
+def estimate_tweet_length(text, url_charge):
+    # we need to find all urls
+    parts = text.split()
+    adj = 0
+    for part in parts:
+        if part.startswith('http://') or part.startswith('https://'):
+            adj += url_charge - len(part)
+    return len(text) + adj
+
+def time_strptime(s):
+    return time.strptime(s, '%a %b %d %H:%M:%S +0000 %Y')
+
 def tweet_unixtime(tweet):
-    return calendar.timegm(time.strptime(tweet['created_at'], '%a %b %d %H:%M:%S +0000 %Y'))
+    return calendar.timegm(time_strptime(tweet['created_at']))
+
+def datetime_strptime(s):
+    return datetime.datetime.strptime(s, '%a %b %d %H:%M:%S +0000 %Y')
 
 def tweet_datetime(tweet):
-    return datetime.datetime.strptime(tweet['created_at'], '%a %b %d %H:%M:%S +0000 %Y')
+    return datetime_strptime(tweet['created_at'])
+
+def now_tweettime():
+    return datetime.datetime.utcnow().strftime('%a %b %d %H:%M:%S +0000 %Y')
 
 def tweet_ago(tweet):
     ago = time.time() - tweet_unixtime(tweet)
