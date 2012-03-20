@@ -2,6 +2,8 @@
 import sys, re
 from util import *
 from pprint import pprint
+from twitter.util import htmlentitydecode
+from urllib.parse import quote as url_quote
 
 class Threader(object):
     def __init__(self, tracker):

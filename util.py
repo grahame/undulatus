@@ -38,7 +38,8 @@ def debug(f):
 #     http://code.google.com/p/twitter-api/issues/detail?id=1695
 # we thus only have to unescape &lt; and &gt;
 def tweet_text(tweet):
-    return tweet['text'].replace('&lt;', '<').replace('&gt;', '>')
+    from twitter.util import htmlentitydecode
+    return htmlentitydecode(tweet['text'])
 
 def tweet_unixtime(tweet):
     return calendar.timegm(time.strptime(tweet['created_at'], '%a %b %d %H:%M:%S +0000 %Y'))
