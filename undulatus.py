@@ -72,7 +72,7 @@ See the file 'LICENSE' included with this software for more detail.
         tracker = TweetTracker(twitter, db)
         timelines = [
                 TimelinePlayback(tracker, twitter.statuses.friends_timeline,
-                    {'include_rts' : True}),
+                    {'include_rts' : True, 'include_entities' : True}),
                 TimelinePlayback(tracker, twitter.statuses.mentions, {})]
 
         class TimelineUpdates(object):
