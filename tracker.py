@@ -102,22 +102,22 @@ class TweetTracker(threading.Thread):
     def get_key_for_tweet(self, tweet):
         return self.tweet_to_key.get(tweet['id'], None)
 
-    def print_tweet(self, tweet, suffix=''):
-        screen_name = "%-15s" % (tweet['user']['screen_name'])
+    def print_tweet(self, tweet):
         key = self.get_key_for_tweet(tweet)
+        suffix = ''
+        details = tweet
+        if 'retweeted_status' in tweet:
+            details = tweet['retweeted_status']
+            suffix = " (retweeted by %s)" % (tweet['user']['screen_name'])
+        screen_name = "%-15s" % (details['user']['screen_name'])
         prefix = "%s) %s " % (key, screen_name)
-        text = tweet_text(tweet)
-        print_wrap_to_prefix(prefix, text + suffix)
+        print_wrap_to_prefix(prefix, tweet_text(details) + suffix)
 
     def display_tweets(self, tweets):
         if len(tweets) == 0:
             return
         print()
         for tweet in tweets:
-            if 'retweeted_status' in tweet:
-                self.print_tweet(tweet['retweeted_status'], 
-                        " (retweeted by %s)" % (tweet['user']['screen_name']))
-            else:
-                self.print_tweet(tweet)
+            self.print_tweet(tweet)
 
 

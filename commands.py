@@ -274,7 +274,7 @@ def get_commands(twitter, username, tracker, updates):
                     print("usage: /usertweets <user> [count]")
                     return
             count = count or 20
-            tweets = twitter.statuses.user_timeline(screen_name=screen_name, count=count)
+            tweets = twitter.statuses.user_timeline(screen_name=screen_name, count=count, include_rts=True)
             sort_tweets_by_id(tweets)
             for tweet in tweets:
                 tracker.add(tweet)
