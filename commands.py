@@ -342,7 +342,6 @@ def get_commands(twitter, username, tracker, updates, configuration):
         commands = ['whois']
         def __call__(self, command, what):
             user = twitter.users.show(id=what)
-            pprint(user)
             print("%s in %s" % (user['name'], user['location']))
             print("Followers: %8d  Following: %8d" % (user['followers_count'], user['friends_count']))
             if user['following']:
