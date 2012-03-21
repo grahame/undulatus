@@ -6,12 +6,8 @@ import couchdb
 
 class DBWrapper(object):
     def __init__(self, app_path, screen_name, srvuri, dbname):
-        srv = couchdb.Server(srvuri)
-        try:
-            self.db = srv.create(dbname)
-        except couchdb.http.PreconditionFailed:
-            self.db = srv[dbname]
-
+        self.srvuri, self.dbname = srvuri, dbname
+        self.reconnect()
         js = open(os.path.join(app_path, 'undulatus.js')).read()
         revision = json.loads(js)["revision"]
         try:
@@ -24,9 +20,17 @@ class DBWrapper(object):
             if db_revision != revision:
                 print('Note: updating javascript design document')
                 del self.db['_design/undulatus']
+                self.reconnect() # work around python couchdb bug
                 self.db['_design/undulatus'] = js
         except couchdb.http.ResourceNotFound:
             self.db['_design/undulatus'] = js
+
+    def reconnect(self):
+        srv = couchdb.Server(self.srvuri)
+        try:
+            self.db = srv.create(self.dbname)
+        except couchdb.http.PreconditionFailed:
+            self.db = srv[self.dbname]
 
     def configuration(self):
         try:
