@@ -49,6 +49,8 @@ class BiDict:
         self.b_a[kb] = a
 
     def __len__(self):
+        if len(self.a_b) != len(self.b_a):
+            print("mismatch of internal length: %d vs. %d" % (len(self.a_b), len(self.b_a)), file=sys.stderr)
         return len(self.a_b)
 
 class TweetTracker(threading.Thread):
@@ -65,8 +67,7 @@ class TweetTracker(threading.Thread):
 
     def status(self):
         info = self.db.info()
-        info['tracker_cache_keys'] = len(self.key_to_tweet)
-        info['tracker_cache_tweets'] = len(self.tweet_to_key)
+        info['undulatus_cache_size'] = len(self.bd)
         return info
 
     def load_recent(self):
