@@ -5,14 +5,59 @@ from twitter.api import TwitterHTTPError
 import traceback, sys
 import threading
 
+class BiDict:
+    def __init__(self, a, ka_f, b, kb_f):
+        self.a_b = {}
+        self.b_a = {}
+        self.ka_f, self.kb_f = ka_f, kb_f
+        def a_b(k):
+            return self.a_b.get(self.get_ka(k))
+        def b_a(k):
+            return self.b_a.get(self.get_kb(k))
+        def a_values():
+            return self.a_b.values()
+        def b_values():
+            return self.b_a.values()
+
+        setattr(self, "%s_to_%s" % (a, b), a_b)
+        setattr(self, "%s_to_%s" % (b, a), b_a)
+        setattr(self, "%s_values" % (a), a_values)
+        setattr(self, "%s_values" % (b), b_values)
+
+    def get_ka(self, a):
+        if self.ka_f is None:
+            return a
+        else:
+            return self.ka_f(a)
+
+    def get_kb(self, b):
+        if self.kb_f is None:
+            return b
+        else:
+            return self.kb_f(b)
+
+    def set(self, a, b):
+        ka = self.get_ka(a)
+        if ka in self.a_b:
+            dup = self.get_kb(self.a_b[ka])
+            del self.b_a[dup]
+        kb = self.get_kb(b)
+        if kb in self.b_a:
+            dup = self.get_ka(self.b_a[kb])
+            del self.a_b[dup]
+        self.a_b[ka] = b
+        self.b_a[kb] = a
+
+    def __len__(self):
+        return len(self.a_b)
+
 class TweetTracker(threading.Thread):
     tbl = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 
     def __init__(self, twitter, db):
         self.twitter = twitter
         self.db = db
-        self.key_to_tweet = {}
-        self.tweet_to_key = {}
+        self.bd = BiDict("key", None, "tweet", lambda x: x['id_str'])
         self.last_idx = 0
         self.base = len(self.tbl)
         self.seen_users = set()
@@ -23,11 +68,11 @@ class TweetTracker(threading.Thread):
         sys.stdout.flush()
         for tweet in self.db.get_recent(self.base * self.base):
             self.cache_tweet(tweet)
-        sys.stdout.write("done! %d tweets loaded.\n" % (len(self.key_to_tweet)))
+        sys.stdout.write("done! %d tweets loaded.\n" % (len(self.bd)))
         sys.stdout.flush()
 
     def get_cached_tweets(self):
-        cache = list(self.key_to_tweet.values())
+        cache = list(self.bd.key_values())
         sort_tweets_by_id(cache)
         return cache
 
@@ -77,19 +122,11 @@ class TweetTracker(threading.Thread):
             return key
         # calculate our 'A9' style key
         key = self.make_key(self.last_idx)
-        # remove any old points for that key
-        try:
-            old_tweet = self.key_to_tweet.pop(key)
-            twitter_id = old_tweet['id_str']
-            self.tweet_to_key.pop(twitter_id)
-        except KeyError:
-            pass
         # update
         self.last_idx = (self.last_idx + 1) % (self.base * self.base)
         # copy ourself in
         twitter_id = tweet['id']
-        self.key_to_tweet[key] = tweet
-        self.tweet_to_key[twitter_id] = key
+        self.bd.set(key, tweet)
         text = tweet_text(tweet)
         for username in get_usernames(text):
             self.seen_users.add(username)
@@ -97,10 +134,10 @@ class TweetTracker(threading.Thread):
         return key
 
     def get_tweet_for_key(self, key):
-        return self.key_to_tweet.get(key, None)
+        return self.bd.key_to_tweet(key)
 
     def get_key_for_tweet(self, tweet):
-        return self.tweet_to_key.get(tweet['id'], None)
+        return self.bd.tweet_to_key(tweet)
 
     def print_tweet(self, tweet):
         key = self.get_key_for_tweet(tweet)
