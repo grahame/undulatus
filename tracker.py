@@ -63,6 +63,12 @@ class TweetTracker(threading.Thread):
         self.seen_users = set()
         self.load_recent()
 
+    def status(self):
+        info = self.db.info()
+        info['tracker_cache_keys'] = len(self.key_to_tweet)
+        info['tracker_cache_tweets'] = len(self.tweet_to_key)
+        return info
+
     def load_recent(self):
         sys.stdout.write("loading recent tweets from database... ")
         sys.stdout.flush()

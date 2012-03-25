@@ -32,6 +32,9 @@ class DBWrapper(object):
         except couchdb.http.PreconditionFailed:
             self.db = srv[self.dbname]
 
+    def info(self):
+        return self.db.info()
+
     def configuration(self):
         try:
             doc = self.db['help_configuration']
