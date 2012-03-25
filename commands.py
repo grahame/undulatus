@@ -62,6 +62,12 @@ def get_commands(twitter, username, tracker, updates, configuration):
     class Command(object, metaclass=CommandMeta):
         pass
 
+    class Status(Command):
+        commands = ['status']
+        def __call__(self, command, what):
+            info = tracker.status()
+            pprint(info)
+
     class Refresh(Command):
         commands = ['refresh']
         def __call__(self, command, what):
