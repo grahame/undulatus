@@ -262,6 +262,20 @@ def get_commands(twitter, username, tracker, updates, configuration):
                 return
             pprint(tweet)
 
+    class Console(Command):
+        commands = ['console']
+        def __call__(self, command, what):
+            from code import InteractiveConsole
+            console = InteractiveConsole(locals={
+                'twitter'       : twitter, 
+                'username'      : username, 
+                'tracker'       : tracker, 
+                'updates'       : updates, 
+                'configuration' : configuration
+                })
+            console.interact("(entering python console)\n")
+            print("(console closed.)")
+
     class Search(Command):
         commands = ['search']
         def __call__(self, command, what):
