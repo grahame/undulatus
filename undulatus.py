@@ -68,6 +68,13 @@ See the file 'LICENSE' included with this software for more detail.
             secure=True,
             api_version='1',
             domain='api.twitter.com')
+        search = Twitter(
+            auth=OAuth(
+                oauth_token, oauth_token_secret, *obsc()),
+            secure=True,
+            api_version='1',
+            domain='search.twitter.com')
+        search.uriparts = ()
 
         configuration = db.configuration()
         if configuration is None or (datetime.datetime.now() - datetime_strptime(configuration['updated'])).days > 1:
@@ -119,7 +126,7 @@ See the file 'LICENSE' included with this software for more detail.
                 self.thread.start()
 
         updates = TimelineUpdates()
-        command_classes = get_commands(twitter, screen_name, tracker, updates, configuration['configuration'])
+        command_classes = get_commands(twitter, search, screen_name, tracker, updates, configuration['configuration'])
 
         class SmartCompletion(object):
             def __init__(self):
