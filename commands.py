@@ -48,7 +48,7 @@ class Threader(object):
         return self.thread
 
 
-def get_commands(twitter, username, tracker, updates, configuration):
+def get_commands(twitter, search, username, tracker, updates, configuration):
     cmds = {}
 
     class CommandMeta(type):
@@ -150,12 +150,14 @@ def get_commands(twitter, username, tracker, updates, configuration):
     class Favourite(Command):
         commands = ['fave']
         def __call__(self, command, what):
+            tweet = tracker.get_tweet_for_key(what)
+            twitter.favorites.create(id=tweet['id'])
             pass
 
-    class Favourites(Command):
-        commands = ['faves']
+    class UnFavourite(Command):
+        commands = ['unfave']
         def __call__(self, command, what):
-            pass
+            twitter.favorites.destroy(id=tweet['id'])
 
     class Follow(Command):
         commands = ['follow']
@@ -263,10 +265,50 @@ def get_commands(twitter, username, tracker, updates, configuration):
                 return
             pprint(tweet)
 
+    class Console(Command):
+        commands = ['console']
+        def __call__(self, command, what):
+            from code import InteractiveConsole
+            console = InteractiveConsole(locals={
+                'twitter'       : twitter, 
+                'username'      : username, 
+                'tracker'       : tracker, 
+                'updates'       : updates, 
+                'configuration' : configuration
+                })
+            console.interact("(entering python console)\n")
+            print("(console closed.)")
+
     class Search(Command):
         commands = ['search']
         def __call__(self, command, what):
             pass
+
+    class Favourites(Command):
+        commands = ['faves']
+        def __call__(self, command, what):
+            count = 20
+            npages = 1
+            if what is not None:
+                parts = what.split(' ')
+                try: count = int(parts[0])
+                except ValueError: pass
+                if len(parts) > 1:
+                    try: npages = int(parts[1])
+                    except ValueError: pass
+            since_id = None
+            while npages > 0:
+                kwargs = {'count': count, 'include_entities': True}
+                if since_id is not None:
+                    kwargs['since_id'] = since_id
+                tweets = twitter.favorites(**kwargs)
+                if len(tweets) > 0: since_id = tweets[-1]['id_str']
+                else: break
+                sort_tweets_by_id(tweets)
+                for tweet in tweets:
+                    tracker.add(tweet)
+                tracker.display_tweets(tweets)
+                npages -= 1
 
     class UserTweets(Command):
         commands = ['usertweets']
@@ -340,11 +382,6 @@ def get_commands(twitter, username, tracker, updates, configuration):
                     threader.process(match)
                 tracker.display_tweets(threader.get())
 
-    class UnFavourite(Command):
-        commands = ['unfave']
-        def __call__(self, command, what):
-            pass
-
     class Whois(Command):
         commands = ['whois']
         def __call__(self, command, what):
@@ -358,6 +395,20 @@ def get_commands(twitter, username, tracker, updates, configuration):
             if user['verified'] == True:
                 print("User is verified.")
             print_wrap_to_prefix("Description: ", user['description'] or '')
+
+    class Search(Command):
+        commands = ['search']
+        def __call__(self, command, what):
+            res = search.search(q=what)
+            for result in res['results']:
+                print_wrap_to_prefix(result['id_str'] + " ", result['text'])
+
+    class Pull(Command):
+        commands = ['pull', 'fetch']
+        def __call__(self, command, what):
+            tweet = twitter.statuses.show(id=what)
+            tracker.add(tweet)
+            tracker.display_tweets([tweet])
 
     return cmds
 
