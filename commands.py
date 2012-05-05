@@ -214,8 +214,9 @@ def get_commands(twitter, username, tracker, updates, configuration):
             # ignore null tweet attempts
             if what == '':
                 return
-            if estimate_tweet_length(what, configuration['short_url_length']) > 140:
-                print("can't send tweet, too long at %d characters." % len(what))
+            est = estimate_tweet_length(what, configuration['short_url_length'])
+            if est > 140:
+                print("can't send tweet, too long at %d characters." % est)
                 return
             if what.startswith('d '):
                 print_wrap_to_prefix("send dm ", what)
