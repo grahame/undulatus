@@ -395,6 +395,8 @@ def get_commands(twitter, search, username, tracker, updates, configuration):
             if user['verified'] == True:
                 print("User is verified.")
             print_wrap_to_prefix("Description: ", user['description'] or '')
+            follows_us = twitter.friendships.exists(user_a = what, user_b = username)
+            print("Follows you:", repr(follows_us))
 
     class Search(Command):
         commands = ['search']
