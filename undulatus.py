@@ -26,7 +26,7 @@ See the file 'LICENSE' included with this software for more detail.
 
         from commands import get_commands
         from tracker import TweetTracker
-        from timeline import TimelinePlayback
+        from timeline import TimelinePlayback, SearchPlayback
         import tweetdb, base64
 
         from twitter.oauth import OAuth, write_token_file, read_token_file
@@ -82,6 +82,7 @@ See the file 'LICENSE' included with this software for more detail.
             new_config = twitter.help.configuration()
             configuration = db.save_configuration(new_config)
 
+
         tracker = TweetTracker(twitter, db)
         timelines = [
                 TimelinePlayback(tracker, twitter.statuses.friends_timeline,
@@ -93,6 +94,7 @@ See the file 'LICENSE' included with this software for more detail.
                 self.thread = None
                 self.update_delay = 60
                 self.go_in(0)
+                self.saved_search_playbacks = {}
 
             def update(self):
                 def _update():
@@ -108,8 +110,39 @@ See the file 'LICENSE' included with this software for more detail.
                         for tweet in recent:
                             printed.add(tweet['id'])
                         tracker.display_tweets(recent)
+                def _update_searches():
+                    saved_searches = db.saved_searches()
+                    # manage search instances
+                    existing = set(self.saved_search_playbacks)
+                    required = set(saved_searches)
+                    cancelled = existing - required
+                    new = required - existing
+                    for s in cancelled:
+                        print("cancelled search: `%s'" % (s))
+                        self.saved_search_playbacks.pop(s)
+                    for s in new:
+                        print("started search: `%s'" % (s))
+                        self.saved_search_playbacks[s] = SearchPlayback(tracker,
+                                search.search, {
+                                    'q' : s,
+                                    'result_type' : 'recent',
+                                    'include_entities' : 't'
+                                    })
+                    # run and then print searches
+                    printed = set()
+                    for s in self.saved_search_playbacks:
+                        timeline = self.saved_search_playbacks[s]
+                        update = timeline.update()
+                        if update is None:
+                            print("search update failed (%s): %s" % (s, repr(timeline)))
+                            continue
+                        recent = [tweet for tweet in update if tweet['id'] not in printed]
+                        for tweet in recent:
+                            printed.add(tweet['id'])
+                        tracker.display_tweets(recent)
                 try:
                     _update()
+                    _update_searches()
                 except TwitterHTTPError as e:
                     print("(twitter API error: %s)" % e)
                     return
@@ -126,7 +159,7 @@ See the file 'LICENSE' included with this software for more detail.
                 self.thread.start()
 
         updates = TimelineUpdates()
-        command_classes = get_commands(twitter, search, screen_name, tracker, updates, configuration['configuration'])
+        command_classes = get_commands(db, twitter, search, screen_name, tracker, updates, configuration['configuration'])
 
         class SmartCompletion(object):
             def __init__(self):

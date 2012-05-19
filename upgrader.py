@@ -27,9 +27,9 @@ class Tweet(Base):
     def _json_to_attrs(cls, tweet):
         attrs = {
                 'status_id' : str(tweet['id_str']),
-                'user_id' : str(tweet['user']['id_str']),
-                'screen_name' : tweet['user']['screen_name'],
-                'in_reply_to_status_id' : str(tweet['in_reply_to_status_id']),
+                'user_id' : tweet_user_id(tweet),
+                'screen_name' : tweet_user(tweet),
+                'in_reply_to_status_id' : str(tweet_in_reply_to(tweet)),
                 'in_reply_to_screen_name' : tweet['in_reply_to_screen_name'],
                 'text' : tweet_text(tweet),
                 'jsonz' : zlib.compress(bytes(json.dumps(tweet), encoding='utf8'))

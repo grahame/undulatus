@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import zlib, json, os
-from util import tweet_text, now_tweettime
+from util import tweet_text, now_tweettime, couch_fields
 import couchdb
 
 class DBWrapper(object):
@@ -34,6 +34,24 @@ class DBWrapper(object):
 
     def info(self):
         return self.db.info()
+    
+    def saved_searches(self):
+        try:
+            doc = self.db['saved_searches']
+        except couchdb.http.ResourceNotFound:
+            doc = None
+        if not doc or "searches" not in doc:
+            return []
+        return doc['searches']
+
+    def save_saved_searches(self, searches):
+        try:
+            doc = self.db['saved_searches']
+        except couchdb.http.ResourceNotFound:
+            doc = {}
+        doc['searches'] = searches
+        self.db['saved_searches'] = doc
+        return doc
 
     def configuration(self):
         try:
@@ -78,7 +96,10 @@ class DBWrapper(object):
         return rv
 
     def make(self, tweet):
-        doc = self.get_by_status_id(tweet['id_str'])
-        if doc is None:
-            self.db[str(tweet['id_str'])] = tweet
+        k = str(tweet['id_str'])
+        doc = self.get_by_status_id(k)
+        if doc is None or 'undulatus_from_search' in doc:
+            if doc is not None:
+                tweet.update(couch_fields(doc))
+            self.db[k] = tweet
 

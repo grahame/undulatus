@@ -4,54 +4,7 @@ from util import *
 from twitter.api import TwitterHTTPError
 import traceback, sys
 import threading
-
-class BiDict:
-    def __init__(self, a, ka_f, b, kb_f):
-        self.a_b = {}
-        self.b_a = {}
-        self.ka_f, self.kb_f = ka_f, kb_f
-        def a_b(k):
-            return self.a_b.get(self.get_ka(k))
-        def b_a(k):
-            return self.b_a.get(self.get_kb(k))
-        def a_values():
-            return self.a_b.values()
-        def b_values():
-            return self.b_a.values()
-
-        setattr(self, "%s_to_%s" % (a, b), a_b)
-        setattr(self, "%s_to_%s" % (b, a), b_a)
-        setattr(self, "%s_values" % (a), a_values)
-        setattr(self, "%s_values" % (b), b_values)
-
-    def get_ka(self, a):
-        if self.ka_f is None:
-            return a
-        else:
-            return self.ka_f(a)
-
-    def get_kb(self, b):
-        if self.kb_f is None:
-            return b
-        else:
-            return self.kb_f(b)
-
-    def set(self, a, b):
-        ka = self.get_ka(a)
-        if ka in self.a_b:
-            dup = self.get_kb(self.a_b[ka])
-            del self.b_a[dup]
-        kb = self.get_kb(b)
-        if kb in self.b_a:
-            dup = self.get_ka(self.b_a[kb])
-            del self.a_b[dup]
-        self.a_b[ka] = b
-        self.b_a[kb] = a
-
-    def __len__(self):
-        if len(self.a_b) != len(self.b_a):
-            print("mismatch of internal length: %d vs. %d" % (len(self.a_b), len(self.b_a)), file=sys.stderr)
-        return len(self.a_b)
+from bidict import BiDict
 
 class TweetTracker(threading.Thread):
     tbl = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
@@ -88,10 +41,15 @@ class TweetTracker(threading.Thread):
         i2 = i // self.base
         return self.tbl[i2] + self.tbl[i1]
 
-    def add(self, tweet):
+    def add(self, tweet, from_search=False):
+        # special code from "from_search" to allow us to upgrade to the 
+        # full tweet if we happen to pull it in later (searches show a 
+        # truncated tweet without all the included user info, etc)
         if 'retweeted_status' in tweet:
-            self.add(tweet['retweeted_status'])
+            self.add(tweet['retweeted_status'], from_search=from_search)
         # look up our database object (or make it)
+        if from_search:
+            tweet['undulatus_from_search'] = True
         self.db.make(tweet)
         self.cache_tweet(tweet)
 
@@ -137,7 +95,7 @@ class TweetTracker(threading.Thread):
         text = tweet_text(tweet)
         for username in get_usernames(text):
             self.seen_users.add(username)
-        self.seen_users.add(tweet['user']['screen_name'])
+        self.seen_users.add(tweet_user(tweet))
         return key
 
     def get_tweet_for_key(self, key):
@@ -152,8 +110,8 @@ class TweetTracker(threading.Thread):
         details = tweet
         if 'retweeted_status' in tweet:
             details = tweet['retweeted_status']
-            suffix = " (retweeted by %s)" % (tweet['user']['screen_name'])
-        screen_name = "%-15s" % (details['user']['screen_name'])
+            suffix = " (retweeted by %s)" % (tweet_user(tweet))
+        screen_name = "%-15s" % (tweet_user(details))
         prefix = "%s) %s " % (key, screen_name)
         print_wrap_to_prefix(prefix, tweet_text(details) + suffix)
 

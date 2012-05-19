@@ -50,14 +50,23 @@ def estimate_tweet_length(text, url_charge):
             adj += url_charge - len(part)
     return len(text) + adj
 
+twitter_date_fmt = '%a %b %d %H:%M:%S +0000 %Y'
+search_date_fmt = '%a, %d %b %Y %H:%M:%S +0000'
+
 def time_strptime(s):
-    return time.strptime(s, '%a %b %d %H:%M:%S +0000 %Y')
+    try:
+        return time.strptime(s, twitter_date_fmt)
+    except ValueError:
+        return time.strptime(s, search_date_fmt)
 
 def tweet_unixtime(tweet):
     return calendar.timegm(time_strptime(tweet['created_at']))
 
 def datetime_strptime(s):
-    return datetime.datetime.strptime(s, '%a %b %d %H:%M:%S +0000 %Y')
+    try:
+        return datetime.datetime.strptime(s, twitter_date_fmt)
+    except ValueError:
+        return datetime.datetime.strptime(s, search_date_fmt)
 
 def tweet_datetime(tweet):
     return datetime_strptime(tweet['created_at'])
@@ -184,4 +193,26 @@ def uniq_usernames(usernames):
         seen.add(lu)
         rv.append(username)
     return rv
+
+def tweet_user(tweet):
+    # cope if we've got a crappy search tweet without embedded user
+    if 'user' in tweet:
+        return tweet['user']['screen_name']
+    else:
+        return tweet['from_user']
+
+def tweet_user_id(tweet):
+    # cope if we've got a crappy search tweet without embedded user
+    if 'user' in tweet:
+        return tweet['user']['id_str']
+    else:
+        return tweet['from_user_id_str']
+
+def tweet_in_reply_to(tweet):
+    return tweet.get('in_reply_to_status_id_str', None)
+
+def couch_fields(doc):
+    for k in doc:
+        if k.startswith('_'):
+            yield k, doc[k]
 

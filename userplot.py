@@ -22,6 +22,8 @@ if __name__ == '__main__':
             y = []
             for tweet in ( db.get_by_status_id(row.id) for row in db.db.view('undulatus/byuser')[[user]:[user+'^']] ):
                 ut = tweet_datetime(tweet)
+                if 'user' not in tweet:
+                    continue
                 followers = tweet['user']['followers_count']
                 if followers == 0: continue #glitch
                 x.append(ut)

@@ -31,7 +31,7 @@ class Threader(object):
             for tweet in this_pass:
                 self.append_to_thread(tweet)
                 # whatever this tweet replied to
-                in_reply_to = tweet['in_reply_to_status_id_str']
+                in_reply_to = tweet_in_reply_to(tweet)
                 if in_reply_to is not None:
                     reply = self.tracker.get_tweet_for_id(in_reply_to)
                     if reply is None:
@@ -48,7 +48,7 @@ class Threader(object):
         return self.thread
 
 
-def get_commands(twitter, search, username, tracker, updates, configuration):
+def get_commands(db, twitter, search, username, tracker, updates, configuration):
     cmds = {}
 
     class CommandMeta(type):
@@ -93,7 +93,7 @@ def get_commands(twitter, search, username, tracker, updates, configuration):
             screen_name = what
             tweet = tracker.get_tweet_for_key(what)
             if tweet is not None:
-                screen_name = tweet['user']['screen_name']
+                screen_name = tweet_user(tweet)
             twitter.blocks.create(id=screen_name)
 
     class ReportSpam(Command):
@@ -102,7 +102,7 @@ def get_commands(twitter, search, username, tracker, updates, configuration):
             screen_name = what
             tweet = tracker.get_tweet_for_key(what)
             if tweet is not None:
-                screen_name = tweet['user']['screen_name']
+                screen_name = tweet_user(tweet)
             print("Really report `%s' for spam (and block them)?" % (screen_name))
             if confirm():
                 twitter.report_spam(id=screen_name)
@@ -113,7 +113,7 @@ def get_commands(twitter, search, username, tracker, updates, configuration):
             screen_name = what
             tweet = tracker.get_tweet_for_key(what)
             if tweet is not None:
-                screen_name = tweet['user']['screen_name']
+                screen_name = tweet_user(tweet)
             twitter.blocks.destroy(id=screen_name)
 
     class BlockExists(Command):
@@ -182,7 +182,7 @@ def get_commands(twitter, search, username, tracker, updates, configuration):
         commands = ['rt']
         def __call__(self, command, what):
             tweet = tracker.get_tweet_for_key(what)
-            print("Retweet following tweet by `%s'?" % (tweet['user']['screen_name']))
+            print("Retweet following tweet by `%s'?" % (tweet_user(tweet)))
             tracker.print_tweet(tweet)
             if confirm():
                 twitter.statuses.retweet(id=tweet['id'])
@@ -201,7 +201,7 @@ def get_commands(twitter, search, username, tracker, updates, configuration):
             if arg is None:
                 print("usage: reply <code> <status>")
                 return
-            usernames = [ tweet['user']['screen_name'] ]
+            usernames = [ tweet_user(tweet) ]
             if command == 'replyall':
                 usernames += get_usernames(tweet_text(tweet))
             # unique usernames, and don't reply to ourselves
@@ -236,12 +236,14 @@ def get_commands(twitter, search, username, tracker, updates, configuration):
         def __call__(self, command, what):
             def display_info(tweet):
                 print("Created: %s (%s)" % (tweet_ctime(tweet), tweet_ago(tweet)))
-                user = tweet['user']
-                print("User: `%s' / `%s' in `%s'" % (user['screen_name'], user['name'], user['location']))
+                if 'user' in tweet:
+                    user = tweet['user']
+                    print("User: `%s' / `%s' in `%s'" % (user['screen_name'], user['name'], user['location']))
                 if tweet.get('in_reply_to_screen_name'):
                     print("In reply to user:", tweet['in_reply_to_screen_name'])
-                if tweet.get('in_reply_to_status_id_str'):
-                    print("In reply to status:", tweet['in_reply_to_status_id_str'])
+                in_reply_to = tweet_in_reply_to(tweet)
+                if in_reply_to is not None:
+                    print("In reply to status:", in_reply_to)
                 if tweet.get('truncated') == True:
                     print("Tweet was truncated.")
                 print("Status:")
@@ -278,11 +280,6 @@ def get_commands(twitter, search, username, tracker, updates, configuration):
                 })
             console.interact("(entering python console)\n")
             print("(console closed.)")
-
-    class Search(Command):
-        commands = ['search']
-        def __call__(self, command, what):
-            pass
 
     class Favourites(Command):
         commands = ['faves']
@@ -369,7 +366,7 @@ def get_commands(twitter, search, username, tracker, updates, configuration):
                 print("grep: error compiling regular expression")
                 return
             def match(tweet):
-                return matcher.search(tweet['user']['screen_name']) or \
+                return matcher.search(tweet_user(tweet)) or \
                         matcher.search(tweet_text(tweet))
             if command == 'grep':
                 matches = list(filter(match, tracker.get_cached_tweets()))
@@ -404,6 +401,20 @@ def get_commands(twitter, search, username, tracker, updates, configuration):
             res = search.search(q=what)
             for result in res['results']:
                 print_wrap_to_prefix(result['id_str'] + " ", result['text'])
+
+    class AddSearch(Command):
+        commands = ['addsearch', 'removesearch']
+        def __call__(self, command, what):
+            searches = set(db.saved_searches())
+            if command == 'addsearch':
+                searches.add(what)
+            elif command == 'removesearch':
+                try:
+                    searches.remove(what)
+                except KeyError:
+                    print ("search `%s' doesn't exist." % what)
+                    return
+            db.save_saved_searches(list(searches))
 
     class Pull(Command):
         commands = ['pull', 'fetch']
