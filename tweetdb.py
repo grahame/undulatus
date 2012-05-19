@@ -35,6 +35,28 @@ class DBWrapper(object):
     def info(self):
         return self.db.info()
     
+    def setloc(self, lat, lng):
+        try:
+            doc = self.db['latlng']
+        except couchdb.http.ResourceNotFound:
+            doc = {}
+        doc['lat'] = lat
+        doc['long'] = lng
+        self.db['latlng'] = doc
+
+    def clearloc(self):
+        try:
+            del self.db['latlng']
+        except couchdb.http.ResourceNotFound:
+            pass
+
+    def getloc(self):
+        try:
+            doc = self.db['latlng']
+        except couchdb.http.ResourceNotFound:
+            doc = {}
+        return doc.get('lat'), doc.get('long')
+        
     def saved_searches(self):
         try:
             doc = self.db['saved_searches']

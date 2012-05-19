@@ -229,6 +229,10 @@ def get_commands(db, twitter, search, username, tracker, updates, configuration)
                 if in_reply_to is not None:
                     update['in_reply_to_status_id'] = in_reply_to
                 update['status'] = what
+                lat, lng = db.getloc()
+                if lat is not None and lng is not None:
+                    update['lat'] = lat
+                    update['long'] = lng
                 twitter.statuses.update(**update)
 
     class Info(Command):
@@ -402,6 +406,15 @@ def get_commands(db, twitter, search, username, tracker, updates, configuration)
             for result in res['results']:
                 print_wrap_to_prefix(result['id_str'] + " ", result['text'])
 
+    class ListSearch(Command):
+        commands = ['listsearch']
+        def __call__(self, command, what):
+            searches = db.saved_searches()
+            searches.sort()
+            print("Persistent searches:")
+            for s in searches:
+                print("  %s" % (s))
+
     class AddSearch(Command):
         commands = ['addsearch', 'removesearch']
         def __call__(self, command, what):
@@ -415,6 +428,13 @@ def get_commands(db, twitter, search, username, tracker, updates, configuration)
                     print ("search `%s' doesn't exist." % what)
                     return
             db.save_saved_searches(list(searches))
+
+    class LatLng(Command):
+        commands = ['setloc']
+        def __call__(self, command, what):
+            lat, lng = map(float, what.split(' '))
+            db.setloc(lat, lng)
+
 
     class Pull(Command):
         commands = ['pull', 'fetch']
