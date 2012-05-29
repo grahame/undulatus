@@ -1,6 +1,6 @@
 
 import sys, re
-import datetime
+import datetime, time
 from util import *
 from pprint import pprint
 from twitter.util import htmlentitydecode
@@ -457,18 +457,38 @@ def get_commands(db, twitter, search, username, tracker, updates, configuration)
                 method = twitter.followers.ids
             elif command == 'following':
                 method = twitter.friends.ids
+            tries = 10
             while True:
-                resp = method(cursor=-1, stringify_ids=True)
+                print("getting %s, cursor %d", command, cursor)
+                try:
+                    resp = method(cursor=cursor, stringify_ids=True)
+                except urllib.error.HTTPError:
+                    tries -= 1
+                    if tries == 0:
+                        print("too many errors, giving up")
+                        return
+                    continue
                 next_cursor = resp['next_cursor']
                 if next_cursor == cursor:
                     break
                 ids = ids.union(set(resp['ids']))
                 cursor = next_cursor
+                time.sleep(1)
             users = []
             for lookup_ids in grouper(100, ids):
                 lookup_ids = [t for t in lookup_ids if t is not None]
-                resp = twitter.users.lookup(user_id=','.join(lookup_ids), include_entities=True)
+                print("retrieving %s: have %d users" % (command, len(users)))
+                while True:
+                    try:
+                        resp = twitter.users.lookup(user_id=','.join(lookup_ids), include_entities=True)
+                        break
+                    except urllib.error.HTTPError:
+                        tries -= 1
+                        if tries == 0:
+                            print("too many errors, giving up")
+                            return
                 users += resp
+                time.sleep(1)
             doc = { 'type' : command, command : users }
             name = command + "_" + datetime.datetime.utcnow().isoformat()
             db.savedoc(name, doc)
