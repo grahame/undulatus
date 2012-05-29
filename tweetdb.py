@@ -117,6 +117,9 @@ class DBWrapper(object):
         rv.reverse()
         return rv
 
+    def savedoc(self, name, doc):
+        self.db[name] = doc
+
     def make(self, tweet):
         k = str(tweet['id_str'])
         doc = self.get_by_status_id(k)

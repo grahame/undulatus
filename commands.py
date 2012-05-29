@@ -1,9 +1,11 @@
 
 import sys, re
+import datetime
 from util import *
 from pprint import pprint
 from twitter.util import htmlentitydecode
 from urllib.parse import quote as url_quote
+from itertools import zip_longest
 
 class Threader(object):
     def __init__(self, tracker):
@@ -442,6 +444,35 @@ def get_commands(db, twitter, search, username, tracker, updates, configuration)
             tweet = twitter.statuses.show(id=what)
             tracker.add(tweet)
             tracker.display_tweets([tweet])
+    
+    class GetFollowers(Command):
+        commands = ['followers', 'following']
+        def __call__(self, command, what):
+            def grouper(n, iterable, fillvalue=None):
+                args = [iter(iterable)] * n
+                return zip_longest(*args, fillvalue=fillvalue)
+            cursor = -1
+            ids = set()
+            if command == 'followers':
+                method = twitter.followers.ids
+            elif command == 'following':
+                method = twitter.friends.ids
+            while True:
+                resp = method(cursor=-1, stringify_ids=True)
+                next_cursor = resp['next_cursor']
+                if next_cursor == cursor:
+                    break
+                ids = ids.union(set(resp['ids']))
+                cursor = next_cursor
+            users = []
+            for lookup_ids in grouper(100, ids):
+                lookup_ids = [t for t in lookup_ids if t is not None]
+                resp = twitter.users.lookup(user_id=','.join(lookup_ids), include_entities=True)
+                users += resp
+            doc = { 'type' : command, command : users }
+            name = command + "_" + datetime.datetime.utcnow().isoformat()
+            db.savedoc(name, doc)
+            print("%s: %d of %d saved to document %s" % (command, len(users), len(ids), name))
 
     return cmds
 
