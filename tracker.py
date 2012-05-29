@@ -17,6 +17,8 @@ class TweetTracker(threading.Thread):
         self.base = len(self.tbl)
         self.seen_users = set()
         self.load_recent()
+        self.reindex_counter = 0
+        self.reindex_interval = 50
 
     def status(self):
         info = self.db.info()
@@ -52,6 +54,11 @@ class TweetTracker(threading.Thread):
             tweet['undulatus_from_search'] = True
         self.db.make(tweet)
         self.cache_tweet(tweet)
+        self.reindex_counter += 1
+        if self.reindex_counter == self.reindex_interval:
+            # poke the index
+            self.reindex_counter = 0
+            self.db.get_recent(1)
 
     def get_tweet_for_id(self, twitter_id):
         # if we can, retrieve from our DB
