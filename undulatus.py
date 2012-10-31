@@ -82,7 +82,6 @@ See the file 'LICENSE' included with this software for more detail.
             new_config = twitter.help.configuration()
             configuration = db.save_configuration(new_config)
 
-
         tracker = TweetTracker(twitter, db)
         timelines = [
                 TimelinePlayback(tracker, twitter.statuses.friends_timeline,

@@ -66,6 +66,8 @@ class TweetTracker(threading.Thread):
         if tweet is not None:
             self.cache_tweet(tweet)
             return tweet
+        if self.twitter is None:
+            return None
         # else, pull it via the API
         try:
             print("pull", twitter_id)
