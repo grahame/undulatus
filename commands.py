@@ -176,7 +176,7 @@ def get_commands(db, twitter, search, username, tracker, updates, configuration)
                         print("follow action complete.")
                         return False
                     screen_name = self._todo[self._upto]
-                    print("following: ", screen_name)
+                    print("following (%d/%d): %s"  % (self._upto+1, len(self._todo), screen_name))
                     try:
                         self._method(id=screen_name)
                     except Exception as e:
@@ -193,6 +193,7 @@ def get_commands(db, twitter, search, username, tracker, updates, configuration)
             with open(fname) as fd:
                 to_follow = [t.strip() for t in fd]
             return FollowExec(method, to_follow)
+
     class Follow(Command):
         commands = ['follow']
         def __call__(self, command, what):
@@ -475,6 +476,44 @@ def get_commands(db, twitter, search, username, tracker, updates, configuration)
             tweet = twitter.statuses.show(id=what)
             tracker.add(tweet)
             tracker.display_tweets([tweet])
+
+    def twitter_cursor(command, method, args, cb):
+        tries = 10
+        cursor = -1
+        while True:
+            print("getting %s, cursor %d" % (command, cursor))
+            try:
+                resp = method(cursor=cursor, **args)
+            except urllib.error.HTTPError:
+                tries -= 1
+                if tries == 0:
+                    print("too many errors, giving up")
+                    return
+                continue
+            cb(resp)
+            next_cursor = resp['next_cursor']
+            if next_cursor == cursor:
+                break
+            cursor = next_cursor
+            time.sleep(1)
+
+    class ListMembers(Command):
+        commands = ['listmembers']
+        def __call__(self, command, what):
+            method = twitter.lists.members
+            screen_name, slug = what.split(' ')
+            args = {}
+            args['owner_screen_name'] = screen_name
+            args['slug'] = slug
+            users = []
+            def _more_members(data):
+                for user in data['users']:
+                    users.append(user)
+            twitter_cursor(command, method, args, _more_members)
+            doc = { 'type' : command, command : users }
+            name = command + "_" + screen_name + "_" + slug + "_" + datetime.datetime.utcnow().isoformat()
+            db.savedoc(name, doc)
+            print("%s: %d users saved to document %s" % (command, len(users), name))
     
     class GetFollowers(Command):
         commands = ['followers', 'following']
@@ -488,6 +527,9 @@ def get_commands(db, twitter, search, username, tracker, updates, configuration)
             if len(screen_name) == 0:
                 print("usage: /%s <username>" % (command))
                 return
+            args = {}
+            args['stringify_ids'] = True
+            args['screen_name'] = screen_name
             if command == 'followers':
                 method = twitter.followers.ids
             elif command == 'following':
@@ -496,7 +538,7 @@ def get_commands(db, twitter, search, username, tracker, updates, configuration)
             while True:
                 print("getting %s, cursor %d" % (command, cursor))
                 try:
-                    resp = method(cursor=cursor, stringify_ids=True, screen_name=screen_name)
+                    resp = method(cursor=cursor, **args)
                 except urllib.error.HTTPError:
                     tries -= 1
                     if tries == 0:
@@ -506,6 +548,7 @@ def get_commands(db, twitter, search, username, tracker, updates, configuration)
                 next_cursor = resp['next_cursor']
                 if next_cursor == cursor:
                     break
+                pprint(resp)
                 ids = ids.union(set(resp['ids']))
                 cursor = next_cursor
                 time.sleep(1)
