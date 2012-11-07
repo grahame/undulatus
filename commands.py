@@ -453,15 +453,19 @@ def get_commands(db, twitter, search, username, tracker, updates, configuration)
                 return zip_longest(*args, fillvalue=fillvalue)
             cursor = -1
             ids = set()
+            screen_name = what
+            if len(screen_name) == 0:
+                print("usage: /%s <username>" % (command))
+                return
             if command == 'followers':
                 method = twitter.followers.ids
             elif command == 'following':
                 method = twitter.friends.ids
             tries = 10
             while True:
-                print("getting %s, cursor %d", command, cursor)
+                print("getting %s, cursor %d" % (command, cursor))
                 try:
-                    resp = method(cursor=cursor, stringify_ids=True)
+                    resp = method(cursor=cursor, stringify_ids=True, screen_name=screen_name)
                 except urllib.error.HTTPError:
                     tries -= 1
                     if tries == 0:
@@ -490,7 +494,7 @@ def get_commands(db, twitter, search, username, tracker, updates, configuration)
                 users += resp
                 time.sleep(1)
             doc = { 'type' : command, command : users }
-            name = command + "_" + datetime.datetime.utcnow().isoformat()
+            name = command + "_" + screen_name + "_" + datetime.datetime.utcnow().isoformat()
             db.savedoc(name, doc)
             print("%s: %d of %d saved to document %s" % (command, len(users), len(ids), name))
 
