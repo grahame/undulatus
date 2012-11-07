@@ -1,6 +1,7 @@
 
 import sys, re
 import datetime, time
+import traceback
 from util import *
 from pprint import pprint
 from twitter.util import htmlentitydecode
@@ -161,6 +162,37 @@ def get_commands(db, twitter, search, username, tracker, updates, configuration)
         def __call__(self, command, what):
             twitter.favorites.destroy(id=tweet['id'])
 
+    class FollowList(Command):
+        commands = ['followfile', 'unfollowfile']
+        def __call__(self, command, what):
+            class FollowExec:
+                def __init__(self, method, todo):
+                    self._method = method
+                    self._todo = todo
+                    self._upto = 0
+                    print("scheduled follow of %d users." % (len(self._todo)))
+                def __call__(self):
+                    if self._upto >= len(self._todo):
+                        print("follow action complete.")
+                        return False
+                    screen_name = self._todo[self._upto]
+                    print("following: ", screen_name)
+                    try:
+                        self._method(id=screen_name)
+                    except Exception as e:
+                        if isinstance(e, SystemExit):
+                            raise
+                        traceback.print_exc()
+                    self._upto += 1
+                    return True
+            fname = what
+            if command == 'followfile':
+                method = twitter.friendships.create
+            else:
+                method = twitter.friendships.destroy
+            with open(fname) as fd:
+                to_follow = [t.strip() for t in fd]
+            return FollowExec(method, to_follow)
     class Follow(Command):
         commands = ['follow']
         def __call__(self, command, what):
@@ -436,7 +468,6 @@ def get_commands(db, twitter, search, username, tracker, updates, configuration)
         def __call__(self, command, what):
             lat, lng = map(float, what.split(' '))
             db.setloc(lat, lng)
-
 
     class Pull(Command):
         commands = ['pull', 'fetch']

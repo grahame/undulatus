@@ -83,15 +83,17 @@ See the file 'LICENSE' included with this software for more detail.
             configuration = db.save_configuration(new_config)
 
         tracker = TweetTracker(twitter, db)
-        timelines = [
-                TimelinePlayback(tracker, twitter.statuses.friends_timeline,
-                    {'include_rts' : True, 'include_entities' : True}),
-                TimelinePlayback(tracker, twitter.statuses.mentions, {})]
 
         class TimelineUpdates(object):
             def __init__(self):
+                self._lock = threading.Lock()
                 self.thread = None
                 self.update_delay = 60
+                self._schedule = {}
+                self.timelines = [
+                        TimelinePlayback(tracker, twitter.statuses.friends_timeline,
+                            {'include_rts' : True, 'include_entities' : True}),
+                        TimelinePlayback(tracker, twitter.statuses.mentions, {})]
                 self.go_in(0)
                 self.saved_search_playbacks = {}
 
@@ -100,7 +102,7 @@ See the file 'LICENSE' included with this software for more detail.
                     # try and suppress tweets that come through in multiple
                     # timelines, eg. @replies from people we follow
                     printed = set()
-                    for timeline in timelines:
+                    for timeline in self.timelines:
                         update = timeline.update()
                         if update is None:
                             print("timeline update failed: %s" % repr(timeline))
@@ -139,16 +141,35 @@ See the file 'LICENSE' included with this software for more detail.
                         for tweet in recent:
                             printed.add(tweet['id'])
                         tracker.display_tweets(recent)
-                try:
-                    _update()
-                    _update_searches()
-                except TwitterHTTPError as e:
-                    print("(twitter API error: %s)" % e)
-                    return
-                except:
-                    print("exception during timeline update")
-                    last_tb.set(traceback.format_exc())
-                self.go_in(self.update_delay)
+                def _scheduled():
+                    done = []
+                    for cb in self._schedule.values():
+                        try:
+                            res = cb()
+                        except Exception as e:
+                            if isinstance(e, SystemExit):
+                                raise
+                            traceback.print_exc()
+                        if not res:
+                            done.append(id(cb))
+                    for cb_id in done:
+                        del self._schedule[cb_id]
+                with self._lock:
+                    try:
+                        _scheduled()
+                        _update()
+                        _update_searches()
+                    except TwitterHTTPError as e:
+                        print("(twitter API error: %s)" % e)
+                        return
+                    except:
+                        print("exception during timeline update")
+                        last_tb.set(traceback.format_exc())
+                    self.go_in(self.update_delay)
+
+            def schedule(self, cb):
+                with self._lock:
+                    self._schedule[id(cb)] = cb
 
             def go_in(self, secs):
                 if self.thread is not None:
@@ -203,7 +224,11 @@ See the file 'LICENSE' included with this software for more detail.
             ex = command_classes.get(cmd, None)
             if ex is not None:
                 try:
-                    ex()(cmd[1:], arg)
+                    cb = ex()(cmd[1:], arg)
+                    # commands can return a callback function, which will then be 
+                    # called each time update() is called until it returns False
+                    if cb is not None:
+                        updates.schedule(cb)
                 except Exception as e:
                     if isinstance(e, SystemExit):
                         raise
