@@ -95,12 +95,16 @@ class DBWrapper(object):
     def tokens(self):
         try:
             doc = self.db['oauth_tokens']
-            return doc['token'], doc['secret']
+            return doc, doc['token'], doc['secret']
         except couchdb.http.ResourceNotFound:
-            return None, None
+            return {}, None, None
 
-    def add_tokens(self, oauth_token, oauth_token_secret):
-        self.db['oauth_tokens'] = {'token': oauth_token, 'secret': oauth_token_secret}
+    def add_tokens(self, base_doc, oauth_token, oauth_token_secret):
+        from copy import copy
+        doc = copy(base_doc)
+        doc['token'] = oauth_token
+        doc['secret'] = oauth_token_secret
+        self.db['oauth_tokens'] = doc
 
     def get_by_status_id(self, status_id):
         try:

@@ -33,16 +33,18 @@ See the file 'LICENSE' included with this software for more detail.
         from twitter.api import Twitter, TwitterError
         from twitter.api import TwitterHTTPError
 
-        from optparse import OptionParser
-        parser = OptionParser()
-        (options, args) = parser.parse_args()
-        screen_name = args[0]
-        srvuri = 'http://localhost:5984'
-        dbname = screen_name.lower()
-        if len(args) >= 2:
-            srvuri = args[1]
-        if len(args) >= 3:
-            dbname = args[2]
+        import argparse
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--reauth', '-r', action='store_true', default=False)
+        parser.add_argument('screen_name')
+        parser.add_argument('-u', default='http://localhost:5984')
+        parser.add_argument('-d', default=None)
+
+        args = parser.parse_args()
+        screen_name = args.screen_name
+        srvuri = args.u
+        dbname = args.d or args.screen_name.lower()
+        reauth = args.reauth
 
         def obsc():
             # pretty pointless, and IMHO OAuth is broken for standalone, open source applications
@@ -50,9 +52,9 @@ See the file 'LICENSE' included with this software for more detail.
                     (b'aWdpcGRPVXp0dHJWVWF5Sk9kTVpLQQ==', b'Q1U2RHpFNzEwY1NFRGN3WnUzS0NsdEt1V0V0TmNqVVBVc1Zzb25abDVCOA==')]
 
         db = tweetdb.DBWrapper(app_path, screen_name, srvuri, dbname)
-        oauth_token, oauth_token_secret = db.tokens()
+        oauth_doc, oauth_token, oauth_token_secret = db.tokens()
 
-        if oauth_token is None:
+        if (oauth_token is None) or reauth:
             from twitter.oauth_dance import oauth_dance
             from tempfile import mkstemp
             fd, filepath = mkstemp()
@@ -60,7 +62,7 @@ See the file 'LICENSE' included with this software for more detail.
             oauth_dance(*args)
             oauth_token, oauth_token_secret = read_token_file(filepath)
             os.unlink(filepath)
-            db.add_tokens(oauth_token, oauth_token_secret)
+            db.add_tokens(oauth_doc, oauth_token, oauth_token_secret)
 
         twitter = Twitter(
             auth=OAuth(
