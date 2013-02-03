@@ -163,7 +163,7 @@ def get_commands(db, twitter, search, username, tracker, updates, configuration)
             twitter.favorites.destroy(id=tweet['id'])
 
     class FollowList(Command):
-        commands = ['followfile', 'unfollowfile']
+        commands = ['followfile', 'unfollowfile', 'listaddfile']
         def __call__(self, command, what):
             class FollowExec:
                 def __init__(self, method, todo):
@@ -185,11 +185,17 @@ def get_commands(db, twitter, search, username, tracker, updates, configuration)
                         traceback.print_exc()
                     self._upto += 1
                     return True
-            fname = what
             if command == 'followfile':
+                fname = what
                 method = twitter.friendships.create
-            else:
+            elif command == 'unfollowfile':
+                fname = what
                 method = twitter.friendships.destroy
+            elif command == 'listaddfile':
+                slug, fname = what.split(' ', 1)
+                def follow_wrapper(id=None):
+                    twitter.lists.members.create(slug=slug, owner_screen_name=username, screen_name=id)
+                method = follow_wrapper
             with open(fname) as fd:
                 to_follow = [t.strip() for t in fd]
             return FollowExec(method, to_follow)
@@ -496,6 +502,24 @@ def get_commands(db, twitter, search, username, tracker, updates, configuration)
                 break
             cursor = next_cursor
             time.sleep(1)
+
+    class ListDelete(Command):
+        commands = ['listdelete']
+        def __call__(self, command, what):
+            twitter.lists.destroy(slug=what, owner_screen_name=username)
+
+    class ListCreate(Command):
+        commands = ['listcreate']
+        def __call__(self, command, what):
+            args = what.split()
+            if len(args) == 1:
+                name = args[0]
+                mode = "public"
+            elif len(args) == 2:
+                name, mode = args
+            else:
+                print("usage: %s <name> [public/private]" % (command))
+            twitter.lists.create(name=name, mode=mode)
 
     class ListMembers(Command):
         commands = ['listmembers']
