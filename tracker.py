@@ -16,7 +16,7 @@ class TweetTracker(threading.Thread):
         self.last_idx = 0
         self.base = len(self.tbl)
         self.seen_users = set()
-        self.load_recent()
+        #self.load_recent()
         self.reindex_counter = 0
         self.reindex_interval = 50
 

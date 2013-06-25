@@ -70,13 +70,6 @@ See the file 'LICENSE' included with this software for more detail.
             secure=True,
             api_version='1.1',
             domain='api.twitter.com')
-        search = Twitter(
-            auth=OAuth(
-                oauth_token, oauth_token_secret, *obsc()),
-            secure=True,
-            api_version='1',
-            domain='search.twitter.com')
-        search.uriparts = ()
 
         configuration = db.configuration()
         if configuration is None or (datetime.datetime.now() - datetime_strptime(configuration['updated'])).days > 1:
@@ -126,7 +119,7 @@ See the file 'LICENSE' included with this software for more detail.
                     for s in new:
                         print("started search: `%s'" % (s))
                         self.saved_search_playbacks[s] = SearchPlayback(tracker,
-                                search.search, {
+                                twitter.search.tweets, {
                                     'q' : s,
                                     'result_type' : 'recent',
                                     'include_entities' : 't'
@@ -181,7 +174,7 @@ See the file 'LICENSE' included with this software for more detail.
                 self.thread.start()
 
         updates = TimelineUpdates()
-        command_classes = get_commands(db, twitter, search, screen_name, tracker, updates, configuration['configuration'])
+        command_classes = get_commands(db, twitter, screen_name, tracker, updates, configuration['configuration'])
 
         class SmartCompletion(object):
             def __init__(self):
