@@ -19,8 +19,8 @@ To get going;
     `./undulatus.py screenname`
 4.  .. it ought to just work.
 
-Note: there's a bug in the Python twitter wrappers that I'm using, 
-so if it fails just after launch with a traceback trying restarting 
+Note: there's a bug in the Python couchdb wrapper that I'm using, 
+so if it fails just after launch with a traceback try restarting 
 immediately. This should only happen on first-ever launch, or 
 after `undulatus.js` has been updated.
 
