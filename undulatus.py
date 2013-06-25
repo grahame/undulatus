@@ -68,7 +68,7 @@ See the file 'LICENSE' included with this software for more detail.
             auth=OAuth(
                 oauth_token, oauth_token_secret, *obsc()),
             secure=True,
-            api_version='1',
+            api_version='1.1',
             domain='api.twitter.com')
         search = Twitter(
             auth=OAuth(
@@ -93,9 +93,9 @@ See the file 'LICENSE' included with this software for more detail.
                 self.update_delay = 60
                 self._schedule = {}
                 self.timelines = [
-                        TimelinePlayback(tracker, twitter.statuses.friends_timeline,
+                        TimelinePlayback(tracker, twitter.statuses.home_timeline,
                             {'include_rts' : True, 'include_entities' : True}),
-                        TimelinePlayback(tracker, twitter.statuses.mentions, {})]
+                        TimelinePlayback(tracker, twitter.statuses.mentions_timeline, {})]
                 self.go_in(0)
                 self.saved_search_playbacks = {}
 
