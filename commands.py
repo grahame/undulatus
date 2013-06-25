@@ -51,7 +51,7 @@ class Threader(object):
         return self.thread
 
 
-def get_commands(db, twitter, search, username, tracker, updates, configuration):
+def get_commands(db, twitter, username, tracker, updates, configuration):
     cmds = {}
 
     class CommandMeta(type):
@@ -443,9 +443,14 @@ def get_commands(db, twitter, search, username, tracker, updates, configuration)
     class Search(Command):
         commands = ['search']
         def __call__(self, command, what):
-            res = search.search(q=what)
-            for result in res['results']:
-                print_wrap_to_prefix(result['id_str'] + " ", result['text'])
+            res = twitter.search.tweets(q=what)
+            recent = res['statuses']
+            recent.reverse()
+            # issue tokens
+            for update in recent:
+                tracker.add(update, from_search=True)
+            for result in res['statuses']:
+                tracker.print_tweet(result)
 
     class ListSearch(Command):
         commands = ['listsearch']

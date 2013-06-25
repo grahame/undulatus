@@ -60,9 +60,9 @@ class SearchPlayback(object):
             print("(traceback playing back timeline - /traceback to retrieve)")
             last_tb.set(traceback.format_exc())
             return
-        if not 'results' in search_res:
+        if not 'statuses' in search_res:
             return
-        recent = search_res['results']
+        recent = search_res['statuses']
         recent.reverse()
         # issue tokens
         for update in recent:
