@@ -10,6 +10,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-s', type=str, default='http://localhost:5984')
     parser.add_argument('-o', type=str, required=True)
+    parser.add_argument('-u', type=str, required=False)
     parser.add_argument('screen_name', type=str)
     args = parser.parse_args()
     dbname = args.screen_name.lower()
@@ -20,6 +21,9 @@ if __name__ == '__main__':
     today = None
     count = 0
     for tweet in ( db.get_by_status_id(row.id) for row in db.db.view('undulatus/byid')):
+        print("here")
+        sn= tweet['user']['screen_name']
+        print(sn)
         try: ut = tweet_datetime(tweet).date()
         except KeyError: continue
         if ut != today:

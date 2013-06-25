@@ -1,6 +1,7 @@
 
 import sys, re
 import datetime, time
+import traceback
 from util import *
 from pprint import pprint
 from twitter.util import htmlentitydecode
@@ -160,6 +161,44 @@ def get_commands(db, twitter, search, username, tracker, updates, configuration)
         commands = ['unfave']
         def __call__(self, command, what):
             twitter.favorites.destroy(id=tweet['id'])
+
+    class FollowList(Command):
+        commands = ['followfile', 'unfollowfile', 'listaddfile']
+        def __call__(self, command, what):
+            class FollowExec:
+                def __init__(self, method, todo):
+                    self._method = method
+                    self._todo = todo
+                    self._upto = 0
+                    print("scheduled follow of %d users." % (len(self._todo)))
+                def __call__(self):
+                    if self._upto >= len(self._todo):
+                        print("follow action complete.")
+                        return False
+                    screen_name = self._todo[self._upto]
+                    print("following (%d/%d): %s"  % (self._upto+1, len(self._todo), screen_name))
+                    try:
+                        self._method(id=screen_name)
+                    except Exception as e:
+                        if isinstance(e, SystemExit):
+                            raise
+                        traceback.print_exc()
+                    self._upto += 1
+                    return True
+            if command == 'followfile':
+                fname = what
+                method = twitter.friendships.create
+            elif command == 'unfollowfile':
+                fname = what
+                method = twitter.friendships.destroy
+            elif command == 'listaddfile':
+                slug, fname = what.split(' ', 1)
+                def follow_wrapper(id=None):
+                    twitter.lists.members.create(slug=slug, owner_screen_name=username, screen_name=id)
+                method = follow_wrapper
+            with open(fname) as fd:
+                to_follow = [t.strip() for t in fd]
+            return FollowExec(method, to_follow)
 
     class Follow(Command):
         commands = ['follow']
@@ -437,13 +476,68 @@ def get_commands(db, twitter, search, username, tracker, updates, configuration)
             lat, lng = map(float, what.split(' '))
             db.setloc(lat, lng)
 
-
     class Pull(Command):
         commands = ['pull', 'fetch']
         def __call__(self, command, what):
             tweet = twitter.statuses.show(id=what)
             tracker.add(tweet)
             tracker.display_tweets([tweet])
+
+    def twitter_cursor(command, method, args, cb):
+        tries = 10
+        cursor = -1
+        while True:
+            print("getting %s, cursor %d" % (command, cursor))
+            try:
+                resp = method(cursor=cursor, **args)
+            except urllib.error.HTTPError:
+                tries -= 1
+                if tries == 0:
+                    print("too many errors, giving up")
+                    return
+                continue
+            cb(resp)
+            next_cursor = resp['next_cursor']
+            if next_cursor == cursor:
+                break
+            cursor = next_cursor
+            time.sleep(1)
+
+    class ListDelete(Command):
+        commands = ['listdelete']
+        def __call__(self, command, what):
+            twitter.lists.destroy(slug=what, owner_screen_name=username)
+
+    class ListCreate(Command):
+        commands = ['listcreate']
+        def __call__(self, command, what):
+            args = what.split()
+            if len(args) == 1:
+                name = args[0]
+                mode = "public"
+            elif len(args) == 2:
+                name, mode = args
+            else:
+                print("usage: %s <name> [public/private]" % (command))
+            twitter.lists.create(name=name, mode=mode)
+
+    class ListMembers(Command):
+        commands = ['listmembers']
+        def __call__(self, command, what):
+            method = twitter.lists.members
+            screen_name, slug = what.split(' ')
+            args = {}
+            args['owner_screen_name'] = screen_name
+            args['slug'] = slug
+            users = []
+            def _more_members(data):
+                for user in data['users']:
+                    users.append(user)
+            twitter_cursor(command, method, args, _more_members)
+            doc = { 'type' : command, command : users }
+            name = command + "_" + screen_name + "_" + slug + "_" + datetime.datetime.utcnow().isoformat()
+            db.savedoc(name, doc)
+            print("%s: %d users saved to document %s" % (command, len(users), name))
     
     class GetFollowers(Command):
         commands = ['followers', 'following']
@@ -453,15 +547,22 @@ def get_commands(db, twitter, search, username, tracker, updates, configuration)
                 return zip_longest(*args, fillvalue=fillvalue)
             cursor = -1
             ids = set()
+            screen_name = what
+            if len(screen_name) == 0:
+                print("usage: /%s <username>" % (command))
+                return
+            args = {}
+            args['stringify_ids'] = True
+            args['screen_name'] = screen_name
             if command == 'followers':
                 method = twitter.followers.ids
             elif command == 'following':
                 method = twitter.friends.ids
             tries = 10
             while True:
-                print("getting %s, cursor %d", command, cursor)
+                print("getting %s, cursor %d" % (command, cursor))
                 try:
-                    resp = method(cursor=cursor, stringify_ids=True)
+                    resp = method(cursor=cursor, **args)
                 except urllib.error.HTTPError:
                     tries -= 1
                     if tries == 0:
@@ -471,6 +572,7 @@ def get_commands(db, twitter, search, username, tracker, updates, configuration)
                 next_cursor = resp['next_cursor']
                 if next_cursor == cursor:
                     break
+                pprint(resp)
                 ids = ids.union(set(resp['ids']))
                 cursor = next_cursor
                 time.sleep(1)
@@ -490,7 +592,7 @@ def get_commands(db, twitter, search, username, tracker, updates, configuration)
                 users += resp
                 time.sleep(1)
             doc = { 'type' : command, command : users }
-            name = command + "_" + datetime.datetime.utcnow().isoformat()
+            name = command + "_" + screen_name + "_" + datetime.datetime.utcnow().isoformat()
             db.savedoc(name, doc)
             print("%s: %d of %d saved to document %s" % (command, len(users), len(ids), name))
 
