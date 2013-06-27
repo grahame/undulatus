@@ -35,10 +35,10 @@ See the file 'LICENSE' included with this software for more detail.
 
         import argparse
         parser = argparse.ArgumentParser()
-        parser.add_argument('--reauth', '-r', action='store_true', default=False)
-        parser.add_argument('screen_name')
-        parser.add_argument('-u', default='http://localhost:5984')
-        parser.add_argument('-d', default=None)
+        parser.add_argument('--reauth', '-r', action='store_true', default=False, help="reauthenticate discarding existing tokens")
+        parser.add_argument('screen_name', help="screen name")
+        parser.add_argument('-u', default='http://localhost:5984', help="database URI")
+        parser.add_argument('-d', default=None, help="database name")
 
         args = parser.parse_args()
         screen_name = args.screen_name
